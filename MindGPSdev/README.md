@@ -19,3 +19,8 @@ To use the components in your app, import them as follows:
 ```tsx
 import { Button } from "@/components/ui/button"
 ```
+to run in terminal: 
+cd MindGPSdev
+npm install
+npm run dev
+npm install lucide-react
