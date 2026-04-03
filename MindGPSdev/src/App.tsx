@@ -1,7 +1,34 @@
-import LandingPage from "./pages/LandingPage"; // App.tsx is now going to act as a simple wrapper for the landing page, we can add more pages and routes later on but for now this is just to get us started with the landing page design and layout.
+import { useState } from "react";
+import LandingPage from "./pages/LandingPage";
+import MoodCheckIn from "./pages/MoodCheckIn.tsx";
+import HomePage from "./pages/HomePage.tsx";
+
+type MoodEntry = {
+  feeling: string;
+  influences: string[];
+  note: string;
+  createdAt: string;
+};
 
 function App() {
-  return <LandingPage />;
+  const [page, setPage] = useState<"landing" | "mood" | "home">("landing");
+  const [moodEntries, setMoodEntries] = useState<MoodEntry[]>([]);
+
+  const addMoodEntry = (entry: MoodEntry) => {
+    setMoodEntries((prev) => [entry, ...prev]);
+  };
+
+  return page === "landing" ? (
+    <LandingPage onStart={() => setPage("mood")} />
+  ) : page === "mood" ? (
+    <MoodCheckIn
+      onSave={() => setPage("home")}
+      onBack={() => setPage("landing")}
+      onAddEntry={addMoodEntry}
+    />
+  ) : (
+    <HomePage entries={moodEntries} />
+  );
 }
 
 export default App;

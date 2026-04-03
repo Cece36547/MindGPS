@@ -2,7 +2,11 @@
 import { Button } from "@/components/ui/button";
 import AccessPanel from "../landing/ AccessPanel";
 
-export default function HeroSection() {
+type HeroSectionProps = {
+  onStart: () => void;
+};
+
+export default function HeroSection({ onStart }: HeroSectionProps) {
   return (
     <section className="px-6 pb-20 pt-8 md:px-10 lg:px-16 lg:pb-28 lg:pt-12">
       <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
@@ -30,7 +34,10 @@ export default function HeroSection() {
           </div>
 
           <div className="flex flex-col gap-4 sm:flex-row">
-            <Button className="h-14 rounded-full bg-[#8d72ea] px-8 text-base font-semibold text-white shadow-[0_10px_30px_rgba(141,114,234,0.28)] hover:bg-[#8165e4]">
+            <Button
+              className="h-14 rounded-full bg-[#8d72ea] px-8 text-base font-semibold text-white shadow-[0_10px_30px_rgba(141,114,234,0.28)] hover:bg-[#8165e4]"
+              onClick={onStart}
+            >
               Get Started
             </Button>
 

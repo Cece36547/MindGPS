@@ -4,11 +4,15 @@ import HeroSection from "../components/landing/ HeroSection";
 import FeatureGrid from "../components/landing/ FeatureGrid";
 import Footer from "../components/landing/Footer";
 
-export default function LandingPage() { // the main compoennt for the landing page, it will be a simple wrapper that includes the navbar, hero section, and feature grid components.
+type LandingPageProps = {
+  onStart: () => void;
+};
+
+export default function LandingPage({ onStart }: LandingPageProps) {
   return (
     <main className="min-h-screen bg-[#ede8ff] text-[#2f1d69]"> 
-      <LandingNavbar />
-      <HeroSection />
+      <LandingNavbar onStart={onStart} />
+      <HeroSection onStart={onStart} />
       <FeatureGrid />
       <Footer />
     </main>
