@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { MindButton } from "@/components/mind/MindButton";
+import type { MoodEntry } from "@/types/mood";
 
 const feelings = [
   { value: "calm", label: "Calm", emoji: "🧘" },
@@ -28,12 +29,7 @@ type MoodCheckInProps = {
   onAddEntry: (entry: MoodEntry) => void;
 };
 
-type MoodEntry = {
-  feeling: string;
-  influences: string[];
-  note: string;
-  createdAt: string;
-};
+
 
 export default function MoodCheckIn({ onBack, onSave, onAddEntry }: MoodCheckInProps) {
   const [selectedFeeling, setSelectedFeeling] = useState("");

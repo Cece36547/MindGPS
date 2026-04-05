@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { MoodEntry } from "@/types/mood";
 
 const motivationalQuotes = [
   "Every day is a new beginning. Take a deep breath and start again.",
@@ -21,12 +22,6 @@ const tabs = [
   { id: "burnbook", label: "Burn Book", icon: "🔥" }
 ];
 
-type MoodEntry = {
-  feeling: string;
-  influences: string[];
-  note: string;
-  createdAt: string;
-};
 
 type HomePageProps = {
   entries: MoodEntry[];
