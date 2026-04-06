@@ -5,7 +5,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@theme inline { 
+@theme inline {  /* Light theme colors */
   --font-heading: var(--font-sans);
   --font-sans: "Figtree Variable", sans-serif;
 
@@ -98,7 +98,7 @@
   --sidebar-ring: oklch(0.56 0.22 278 / 0.35);
 }
 
-.dark {
+.dark { /* Dark theme colors  */
   --background: oklch(0.18 0.02 270);
   --foreground: oklch(0.95 0.01 280);
 
@@ -142,7 +142,7 @@
   --sidebar-ring: oklch(0.72 0.16 285 / 0.35);
 }
 
-@layer base {
+@layer base { /* Global styles (Andy) */
   * {
     @apply border-border outline-ring/50;
   }
@@ -166,4 +166,97 @@
       radial-gradient(circle at bottom right, oklch(0.9 0.04 255 / 0.45), transparent 30%);
     background-attachment: fixed;
   }
+}
+
+/* This is the beginning of css classes for the concept map feature (Andy) */
+:root { /* Mesh background colors * this is our theme for the concept map feature */
+  --mesh-blue: #eaf2ff;
+  --mesh-lavender: #ede9fe;
+  --mesh-pink: #fbe7f3;
+}
+
+.mesh-gradient { /* Mesh background styles * this is the background for the concept map feature */
+  background-image:
+    radial-gradient(at 0% 0%, var(--mesh-blue) 0%, transparent 70%),
+    radial-gradient(at 100% 0%, var(--mesh-lavender) 0%, transparent 70%),
+    radial-gradient(at 50% 50%, var(--mesh-lavender) 0%, transparent 80%),
+    radial-gradient(at 0% 100%, var(--mesh-pink) 0%, transparent 70%),
+    radial-gradient(at 100% 100%, var(--mesh-lavender) 0%, transparent 70%);
+  background-color: var(--mesh-blue);
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+}
+
+.canvas-bg { /* Canvas background styles * this is the background for the concept map canvas */
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+}
+
+.glass-sphere { /* Glass sphere styles * this is the style for the nodes in the concept map */
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(255, 255, 255, 0.45) 0%,
+    rgba(255, 255, 255, 0.15) 100%
+  );
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow:
+    inset 0 4px 16px rgba(255, 255, 255, 0.8),
+    inset 0 -8px 24px rgba(0, 0, 0, 0.02),
+    0 20px 50px -15px rgba(0, 0, 0, 0.08);
+  position: relative;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  border-radius: 9999px;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.glass-sphere::before { /* Glass sphere highlight styles * this is the highlight for the nodes in the concept map */
+  content: "";
+  position: absolute;
+  top: 12%;
+  left: 15%;
+  width: 35%;
+  height: 25%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), transparent 80%);
+  filter: blur(12px);
+  border-radius: 50%;
+  transform: rotate(-15deg);
+  pointer-events: none;
+}
+
+.bubble-dot { /* Bubble dot styles * this is the style for the small bubbles that appear around the nodes in the concept map */
+  width: 5px;
+  height: 5px;
+  background: #4f46e5;
+  border-radius: 50%;
+  opacity: 0.35;
+  position: absolute;
+  bottom: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  box-shadow: 0 0 10px rgba(79, 70, 229, 0.2);
+}
+
+.squishy-btn { /* Squishy button styles * this is the style for the buttons in the concept map feature */
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.squishy-btn:active { /* Squishy button active styles * this is the style for the buttons in the concept map feature when they are pressed */
+  transform: scale(0.94);
+}
+
+.floating-nav { /* Floating navigation styles * this is the style for the floating navigation menu in the concept map feature */
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(30px) saturate(160%);
+  -webkit-backdrop-filter: blur(30px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.1);
+  transform: translateZ(0);
 }
