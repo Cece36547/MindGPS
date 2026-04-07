@@ -1,17 +1,12 @@
 import { useState } from "react";
 import LandingPage from "./pages/LandingPage";
-import MoodCheckIn from "./pages/MoodCheckIn.tsx";
-import HomePage from "./pages/HomePage.tsx";
-
-type MoodEntry = {
-  feeling: string;
-  influences: string[];
-  note: string;
-  createdAt: string;
-};
+import MoodCheckIn from "./pages/MoodCheckIn";
+import HomePage from "./pages/HomePage";
+import ExplorePage from "./pages/ExplorePage";
+import type { MoodEntry } from "@/types/mood";
 
 function App() {
-  const [page, setPage] = useState<"landing" | "mood" | "home">("landing");
+  const [page, setPage] = useState<"landing" | "mood" | "home" | "explore">("landing");
   const [moodEntries, setMoodEntries] = useState<MoodEntry[]>([]);
 
   const addMoodEntry = (entry: MoodEntry) => {
@@ -26,8 +21,13 @@ function App() {
       onBack={() => setPage("landing")}
       onAddEntry={addMoodEntry}
     />
+  ) : page === "explore" ? (
+    <ExplorePage onBack={() => setPage("home")} />
   ) : (
-    <HomePage entries={moodEntries} />
+    <HomePage
+      entries={moodEntries}
+      onOpenExplore={() => setPage("explore")}
+    />
   );
 }
 

@@ -25,10 +25,11 @@ const tabs = [
 
 type HomePageProps = {
   entries: MoodEntry[];
+  onOpenExplore: () => void;
 };
 
-export default function HomePage({ entries }: HomePageProps) {
-  const [activeTab, setActiveTab] = useState("explore");
+export default function HomePage({ entries, onOpenExplore }: HomePageProps) {
+  const [activeTab, setActiveTab] = useState("journal"); // i am changing the wiring (Andy) the first page will be journal
   const [currentQuote] = useState(() =>
     motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]
   );
@@ -45,7 +46,13 @@ export default function HomePage({ entries }: HomePageProps) {
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                 onClick={() => { // When the user clicks on a tab, if the tab is the explore tab, we will open the explore page, otherwise we will set the active tab to the id of the tab that was clicked
+  if (tab.id === "explore") {
+    onOpenExplore();
+  } else {
+    setActiveTab(tab.id);
+  }
+}}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition ${
                     activeTab === tab.id
                       ? "bg-violet-100 text-violet-900 border border-violet-300"
