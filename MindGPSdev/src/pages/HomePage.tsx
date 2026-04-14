@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { MoodEntry } from "@/types/mood";
+import { FindListenerPage } from "@/components/listener/FindListenerPage";
 
 const motivationalQuotes = [
   "Every day is a new beginning. Take a deep breath and start again.",
@@ -114,6 +115,8 @@ export default function HomePage({ entries, onOpenExplore }: HomePageProps) {
                     </div>
                   )}
                 </div>
+              ) : activeTab === "listener" ? (
+                <FindListenerPage />
               ) : (
                 <div className="text-center py-12">
                   <div className="text-4xl mb-4">
@@ -121,7 +124,6 @@ export default function HomePage({ entries, onOpenExplore }: HomePageProps) {
                   </div>
                   <p className="text-[#6b6485] text-lg">
                     {activeTab === "explore" && "emotional concept map "}
-                    {activeTab === "listener" && "connect with someone"}
                     {activeTab === "community" && "find people of similar interests"}
                     {activeTab === "burnbook" && "vent. write out frustrations and burn them away !"}
                   </p>
