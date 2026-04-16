@@ -4,7 +4,7 @@ import MoodCheckIn from "./pages/MoodCheckIn";
 import HomePage from "./pages/HomePage";
 import ExplorePage from "./pages/ExplorePage";
 import type { MoodEntry } from "@/types/mood";
-
+// (Andy) App.tsx is only switching landing mood home and explore pages
 function App() {
   const [page, setPage] = useState<"landing" | "mood" | "home" | "explore">("landing");
   const [moodEntries, setMoodEntries] = useState<MoodEntry[]>([]);
