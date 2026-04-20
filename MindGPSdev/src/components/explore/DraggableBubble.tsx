@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus, X } from '@/lib/lucide-icons';
 import type { DraggableBubbleProps } from '@/types/types';
 
 interface ExtendedDraggableBubbleProps extends DraggableBubbleProps {

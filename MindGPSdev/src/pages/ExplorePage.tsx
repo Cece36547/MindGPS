@@ -1,4 +1,4 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "@/lib/lucide-icons";
 import { MindMapCanvas } from "@/components/explore/MindMapCanvas";
 
 type ExplorePageProps = {

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Check, ChevronRight, Maximize2, Minimize2, Plus } from 'lucide-react';
+import { ArrowLeft, Check, ChevronRight, Maximize2, Minimize2, Plus } from '@/lib/lucide-icons';
 import type { Bubble, BubbleType } from '@/types/types';
 import { COLORS, SUGGESTIONS } from '@/components/explore/constants';
 import { DraggableBubble } from '@/components/explore/DraggableBubble';

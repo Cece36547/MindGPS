@@ -1,4 +1,4 @@
-import { BookOpen, Brain, ChartNoAxesColumn, Network } from "lucide-react";
+import { BookOpen, Brain, ChartNoAxesColumn, Network } from "@/lib/lucide-icons";
 
 const features = [
   {
