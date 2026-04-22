@@ -2,6 +2,7 @@ import { useState } from "react"
 import { BurnBook } from "@/components/burnbook/BurnBook"
 import type { MoodEntry } from "@/types/mood"
 import { FindListenerPage } from "@/components/listener/FindListenerPage"
+import { CommunityPage } from "@/components/community/CommunityPage"
 // (Andy) HomePage is the main dashboard for the user after they complete their mood check-in, it has a sidebar with navigation tabs and a main content area that displays a motivational quote and the content of the selected tab, the explore tab will take the user to the emotional concept map, the journal tab will show the user's mood entries, the listener tab will show the find a listener page, the community tab will show a placeholder for finding people of similar interests, and the burn book tab will show the burn book component where users can release their frustrations in a safe and private space.
 const motivationalQuotes = [
   "Every day is a new beginning. Take a deep breath and start again.",
@@ -154,6 +155,8 @@ export default function HomePage({ entries, onOpenExplore }: HomePageProps) {
                 </div>
               ) : activeTab === "listener" ? (
                 <FindListenerPage />
+              ) : activeTab === "community" ? (
+                <CommunityPage entries={entries} />
               ) : activeTab === "burnbook" ? (
                 <BurnBook />
               ) : (
