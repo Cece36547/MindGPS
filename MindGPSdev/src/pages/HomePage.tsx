@@ -114,46 +114,96 @@ export default function HomePage({ entries, onOpenExplore }: HomePageProps) {
                 </h3>
               )}
 
-              {activeTab === "journal" ? (
-                <div className="space-y-3 sm:space-y-4">
-                  {entries.length > 0 ? (
-                    entries.map((entry, index) => (
-                      <article
-                        key={`${entry.createdAt}-${index}`}
-                        className="rounded-xl border border-violet-100 bg-white p-3 shadow-sm sm:rounded-2xl sm:p-4"
-                      >
-                        <p className="text-xs text-[#5d5479] sm:text-sm">
-                          {entry.createdAt}
-                        </p>
-                        <p className="mt-1 text-base font-semibold text-[#2f1d69] sm:text-lg">
-                          Feeling: {entry.feeling}
-                        </p>
-                        <p className="text-xs text-[#6b6485] sm:text-sm">
-                          Influences:{" "}
-                          {entry.influences.length
-                            ? entry.influences.join(", ")
-                            : "none"}
-                        </p>
-                        {entry.note && (
-                          <p className="mt-2 text-xs text-[#4e3a8a] sm:text-sm">
-                            {entry.note}
-                          </p>
-                        )}
-                      </article>
-                    ))
-                  ) : (
-                    <div className="py-8 text-center sm:py-12">
-                      <div className="mb-3 text-3xl sm:mb-4 sm:text-4xl">
-                        📝
-                      </div>
-                      <p className="text-sm text-[#6b6485] sm:text-base lg:text-lg">
-                        No journal entries yet. Complete your daily check-in to
-                        get started!
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ) : activeTab === "listener" ? (
+              {activeTab === "journal" ? ( // // (Andy) Journal tab content: displays saved mood check-in entries in a polished card layout
+  <section className="space-y-6">
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"> 
+      <div>
+        <div className="flex flex-wrap items-center gap-3">
+          <h3 className="text-2xl font-bold text-[#2f1d69] sm:text-3xl">
+            Journal
+          </h3>
+          <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-violet-700">
+            {entries.length} {entries.length === 1 ? "entry" : "entries"} saved
+          </span>
+        </div>
+        <p className="mt-2 text-sm leading-relaxed text-[#6b6485] sm:text-base">
+          Reflect on your thoughts, moods, and patterns over time.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#6d4cc2] to-[#a78bfa] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:scale-[1.02] hover:shadow-xl"
+      >
+        + New Entry
+      </button>
+    </div> {/* (Andy) Journal tab content: displays saved mood check-in entries in a polished card layout */}
+
+    {entries.length > 0 ? ( 
+      <div className="space-y-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8a80aa]">
+          Recent Reflections
+        </p>
+
+        {entries.map((entry, index) => (
+          <article
+            key={`${entry.createdAt}-${index}`}
+            className="rounded-3xl bg-[#f7f4ff] p-5 shadow-sm transition hover:bg-white hover:shadow-md sm:p-6"
+          >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-xs font-medium text-[#5d5479] sm:text-sm">
+                  {entry.createdAt} {/* this is the creation date */}
+                </p>
+              </div>
+
+              <span className="inline-flex w-fit items-center gap-2 rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-violet-600" />
+                {entry.feeling} {/* this is the mood feeling */}
+              </span>
+            </div>
+
+            {entry.note && (
+              <p className="mt-5 text-base leading-relaxed text-[#2f1d69] sm:text-lg">
+                “{entry.note}”
+              </p>
+            )}
+
+            <div className="mt-5 flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wide text-[#6b6485]">
+                Influences:
+              </span>
+
+              {entry.influences.length > 0 ? (
+                entry.influences.map((influence) => (
+                  <span
+                    key={influence}
+                    className="rounded-full bg-white px-3 py-1 text-xs font-medium text-[#4e3a8a] shadow-sm"
+                  >
+                    {influence}
+                  </span>
+                ))
+              ) : (
+                <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-[#8a80aa] shadow-sm">
+                  none
+                </span>
+              )}
+            </div>
+          </article>
+        ))}
+      </div>
+    ) : (
+      <div className="rounded-3xl bg-[#f7f4ff] px-6 py-12 text-center">
+        <div className="mb-4 text-4xl">📝</div>
+        <h4 className="text-lg font-semibold text-[#2f1d69]">
+          No journal entries yet
+        </h4>
+        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[#6b6485] sm:text-base">
+          Complete your daily check-in to start building your private reflection history.
+        </p>
+      </div>
+    )}
+  </section> ) : activeTab === "listener" ? (
                 <FindListenerPage />
               ) : activeTab === "community" ? (
                 <CommunityPage entries={entries} />
