@@ -14,7 +14,8 @@ function App() {
   };
 
   return page === "landing" ? (
-    <LandingPage onStart={() => setPage("mood")} />
+    // (Andy) send users to home first after login
+    <LandingPage onStart={() => setPage("home")} />
   ) : page === "mood" ? (
     <MoodCheckIn
       onSave={() => setPage("home")}
@@ -27,6 +28,7 @@ function App() {
     <HomePage
       entries={moodEntries}
       onOpenExplore={() => setPage("explore")}
+      onAddEntry={addMoodEntry}
     />
   );
 }
