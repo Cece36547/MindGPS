@@ -29,6 +29,7 @@ function App() {
       entries={moodEntries}
       onOpenExplore={() => setPage("explore")}
       onAddEntry={addMoodEntry}
+      onLogout={() => setPage("landing")}
     />
   );
 }

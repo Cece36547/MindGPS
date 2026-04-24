@@ -32,12 +32,14 @@ type HomePageProps = {
   entries: MoodEntry[]
   onOpenExplore: () => void
   onAddEntry: (entry: MoodEntry) => void
+  onLogout: () => void
 }
 // (Andy) the HomePage component is designed to be a calming and supportive space for users to reflect on their emotions, track their mood entries, find support through listeners and community, and release their frustrations through the burn book, the motivational quote at the top serves as a gentle reminder to take care of their mental health and practice self-compassion.
 export default function HomePage({
   entries,
   onOpenExplore,
   onAddEntry,
+  onLogout,
 }: HomePageProps) {
   // (Andy) start users on the dashboard after login
   const [activeTab, setActiveTab] = useState("home")
@@ -98,7 +100,7 @@ export default function HomePage({
               <p className="text-center text-xs text-[#6b6485]">
                 Your mood entries are saved in Journal
               </p>
-              <button className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100">
+              <button className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100" onClick={onLogout}>
                 Log Out
               </button>
             </div>
