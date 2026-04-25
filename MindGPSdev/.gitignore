@@ -24,4 +24,23 @@ dist-ssr
 *.sw?
 
 node_modules/
+
+# env
+backend/.env
+.env
 .env.local
+
+
+# firebase service account key (very important!)
+*.json
+!package.json
+!package-lock.json
+!tsconfig*.json
+!components.json
+
+# build output
+dist/
+
+# test files
+test-connections.js
+EOF
