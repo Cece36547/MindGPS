@@ -1,10 +1,9 @@
 import { useState } from "react"
 import { BurnBook } from "@/components/burnbook/BurnBook"
 import type { MoodEntry } from "@/types/mood"
-import { FindListenerPage } from "@/components/listener/FindListenerPage"
 import { CommunityPage } from "@/components/community/CommunityPage"
 import MoodCheckIn from "@/pages/MoodCheckIn"
-// (Andy) HomePage is the main dashboard for the user after they complete their mood check-in, it has a sidebar with navigation tabs and a main content area that displays a motivational quote and the content of the selected tab, the explore tab will take the user to the emotional concept map, the journal tab will show the user's mood entries, the listener tab will show the find a listener page, the community tab will show a placeholder for finding people of similar interests, and the burn book tab will show the burn book component where users can release their frustrations in a safe and private space.
+// (Andy) HomePage is the main dashboard after the mood check-in, with sidebar tabs for the core MVP spaces and a main content area for the selected view.
 const motivationalQuotes = [
   "Every day is a new beginning. Take a deep breath and start again.",
   "You are stronger than you think. You've overcome challenges before, and you will again.",
@@ -17,24 +16,23 @@ const motivationalQuotes = [
   "One day at a time. Focus on today, not tomorrow's worries.",
   "You have the power to choose your thoughts. Choose kindness for yourself.",
 ]
-// (Andy) HomePage is the main dashboard for the user after they complete their mood check-in, it has a sidebar with navigation tabs and a main content area that displays a motivational quote and the content of the selected tab, the explore tab will take the user to the emotional concept map, the journal tab will show the user's mood entries, the listener tab will show the find a listener page, the community tab will show a placeholder for finding people of similar interests, and the burn book tab will show the burn book component where users can release their frustrations in a safe and private space.
+// (Andy) keep the dashboard tabs focused on the MVP sections we want people using right now
 const tabs = [
   // (Andy) added home first so it shows before journal
   { id: "home", label: "Home", icon: "🏠" },
   { id: "explore", label: "Explore", icon: "🔍" },
   { id: "journal", label: "Journal", icon: "📝" },
-  { id: "listener", label: "Find a Listener", icon: "👂" },
   { id: "community", label: "Community", icon: "👥" },
   { id: "burnbook", label: "Burn Book", icon: "🔥" },
 ]
-// (Andy) the HomePage component is designed to be a calming and supportive space for users to reflect on their emotions, track their mood entries, find support through listeners and community, and release their frustrations through the burn book, the motivational quote at the top serves as a gentle reminder to take care of their mental health and practice self-compassion.
+// (Andy) the HomePage component is meant to feel calm and supportive while people move between reflection, exploration, community, and the burn book.
 type HomePageProps = {
   entries: MoodEntry[]
   onOpenExplore: () => void
   onAddEntry: (entry: MoodEntry) => void
   onLogout: () => void
 }
-// (Andy) the HomePage component is designed to be a calming and supportive space for users to reflect on their emotions, track their mood entries, find support through listeners and community, and release their frustrations through the burn book, the motivational quote at the top serves as a gentle reminder to take care of their mental health and practice self-compassion.
+// (Andy) the quote at the top helps keep the dashboard feeling warm without changing the layout underneath it.
 export default function HomePage({
   entries,
   onOpenExplore,
@@ -255,8 +253,6 @@ export default function HomePage({
     )}
   </section>
   )
-              ) : activeTab === "listener" ? (
-                <FindListenerPage />
               ) : activeTab === "community" ? (
                 <CommunityPage entries={entries} />
               ) : activeTab === "burnbook" ? (
