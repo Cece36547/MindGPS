@@ -18,9 +18,13 @@
     "@tailwindcss/vite": "^4.2.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+<<<<<<< HEAD
     "dotenv": "^17.4.2",
     "firebase": "^12.12.1",
     "firebase-admin": "^13.8.0",
+=======
+    "framer-motion": "^12.38.0",
+>>>>>>> 02609143a383b6b98f12f1631292f70842cc393b
     "lucide-react": "^1.7.0",
     "mongodb": "^7.2.0",
     "mongoose": "^9.5.0",
