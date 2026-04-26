@@ -5,8 +5,12 @@ import { connectDB } from './config/db.js';
 import authRoutes from './routes/auth.routes.js';
 import mapRoutes from './routes/map.routes.js';
 import journalRoutes from './routes/journal.routes.js';
+import { startWeeklyReset } from './cron/weeklyReset.js';
 
 const app = express();
+app.get("/", (req, res) => {
+  res.send("MindGPS API is running 🚀");
+});
 
 app.use(cors());
 app.use(express.json());
@@ -21,4 +25,7 @@ const PORT = process.env.PORT || 3000;
 
 connectDB().then(() => {
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+  // start weekly reset job
+  startWeeklyReset();
 });

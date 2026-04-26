@@ -20,3 +20,5 @@ if (!admin.apps.length) {
 }
 
 export default admin;
+
+/* DIFFERENT FIREBASE PROTECTION USING aya.baileya@gmail.com used in .env*/
