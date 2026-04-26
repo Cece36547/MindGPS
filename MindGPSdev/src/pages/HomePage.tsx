@@ -3,6 +3,7 @@ import { BurnBook } from "@/components/burnbook/BurnBook"
 import type { MoodEntry } from "@/types/mood"
 import { CommunityPage } from "@/components/community/CommunityPage"
 import MoodCheckIn from "@/pages/MoodCheckIn"
+import { useAuth } from "@/context/AuthContext"
 // (Andy) HomePage is the main dashboard after the mood check-in, with sidebar tabs for the core MVP spaces and a main content area for the selected view.
 const motivationalQuotes = [
   "Every day is a new beginning. Take a deep breath and start again.",
@@ -30,19 +31,19 @@ type HomePageProps = {
   entries: MoodEntry[]
   onOpenExplore: () => void
   onAddEntry: (entry: MoodEntry) => void
-  onLogout: () => void
 }
 // (Andy) the quote at the top helps keep the dashboard feeling warm without changing the layout underneath it.
 export default function HomePage({
   entries,
   onOpenExplore,
   onAddEntry,
-  onLogout,
 }: HomePageProps) {
+  const { logOut } = useAuth()
   // (Andy) start users on the dashboard after login
   const [activeTab, setActiveTab] = useState("home")
   // (Andy) tracks when someone is writing a new journal entry
   const [isWritingEntry, setIsWritingEntry] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [currentQuote] = useState(
     () =>
       motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]
@@ -64,6 +65,18 @@ export default function HomePage({
   }
 
   // (Andy) only show the journal form after New Entry is clicked
+
+  const handleLogOut = async () => {
+    // (Andy) Firebase controls the real session now, so signing out here sends the app back to landing automatically
+    try {
+      setIsLoggingOut(true)
+      await logOut()
+    } catch (error) {
+      console.error("Unable to log out right now.", error)
+    } finally {
+      setIsLoggingOut(false)
+    }
+  }
 
   return (
     <main className="min-h-screen bg-[#ede8ff] text-[#2f1d69]">
@@ -98,8 +111,12 @@ export default function HomePage({
               <p className="text-center text-xs text-[#6b6485]">
                 Your mood entries are saved in Journal
               </p>
-              <button className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100" onClick={onLogout}>
-                Log Out
+              <button
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70"
+                disabled={isLoggingOut}
+                onClick={() => void handleLogOut()}
+              >
+                {isLoggingOut ? "Logging Out..." : "Log Out"}
               </button>
             </div>
           </div>

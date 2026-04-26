@@ -1,12 +1,19 @@
 // (Andy) this is the hero section component, it will be used on the landing page and will be a simple section with a title, description, and call to action button.)
 import { Button } from "@/components/ui/button";
 import AccessPanel from "../landing/ AccessPanel";
+import type { AuthMode } from "@/types/types";
 
 type HeroSectionProps = {
   onStart: () => void;
+  authMode: AuthMode;
+  onAuthModeChange: (mode: AuthMode) => void;
 };
 
-export default function HeroSection({ onStart }: HeroSectionProps) {
+export default function HeroSection({
+  onStart,
+  authMode,
+  onAuthModeChange,
+}: HeroSectionProps) {
   return (
     <section className="px-6 pb-20 pt-8 md:px-10 lg:px-16 lg:pb-28 lg:pt-12">
       <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
@@ -51,7 +58,7 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
         </div>
 
         <div className="relative">
-          <AccessPanel />
+          <AccessPanel mode={authMode} onModeChange={onAuthModeChange} />
         </div>
       </div>
     </section>
