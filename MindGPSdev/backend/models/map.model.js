@@ -24,17 +24,15 @@ const edgeSchema = new mongoose.Schema(
   { _id: false }
 );
 
-/* =========================
-   MAP SCHEMA (WEEKLY MAP)
-========================= */
+/* WEEKLY MAP SCHEMA */
 const mapSchema = new mongoose.Schema({
-  // Firebase UID (NOT Mongo ObjectId)
+  // Firebase UID
   user: { type: String, required: true },
 
-  // identifies the week this map belongs to (ex: 2026-W17)
+  // ⭐ THIS MAKES THE RESET WORK
   weekKey: { type: String, required: true },
 
-  title: { type: String, default: "Untitled Map" },
+  title: { type: String, default: "Weekly Mind Map" },
 
   nodes: [nodeSchema],
   edges: [edgeSchema],
@@ -43,7 +41,7 @@ const mapSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
-/* Automatically update updatedAt on every save */
+/* auto update timestamp */
 mapSchema.pre("save", function (next) {
   this.updatedAt = new Date();
   next();

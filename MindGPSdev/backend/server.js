@@ -20,11 +20,12 @@ app.use('/api/maps', mapRoutes);
 app.use('/api/journals', journalRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
-
-const PORT = process.env.PORT || 3000;
+const PORT = 5050;
 
 connectDB().then(() => {
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  app.listen(PORT, "0.0.0.0", () =>
+    console.log(`Server running on port ${PORT}`)
+  );
 
   // start weekly reset job
   startWeeklyReset();
