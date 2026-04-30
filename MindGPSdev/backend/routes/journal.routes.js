@@ -2,12 +2,12 @@ import { Router } from 'express';
 import { verifyToken } from '../middleware/auth.js';
 import { Journal } from '../models/journal.model.js';
 
-const router = Router();
+const router = Router(); // Initialize the router
 
 /* =============================
    GET all journal entries
 ============================= */
-router.get('/', verifyToken, async (req, res) => {
+router.get('/', verifyToken, async (req, res) => { // Get all journal entries
   try {
     const entries = await Journal
       .find({ user: req.user._id })
@@ -23,14 +23,14 @@ router.get('/', verifyToken, async (req, res) => {
 /* =============================
    GET single journal entry
 ============================= */
-router.get('/:id', verifyToken, async (req, res) => {
+router.get('/:id', verifyToken, async (req, res) => { // Get a single journal entry by ID
   try {
-    const entry = await Journal.findOne({
-      _id: req.params.id,
-      user: req.user._id
+    const entry = await Journal.findOne({ // Find a single journal entry by ID
+      _id: req.params.id, // The ID of the entry to find
+      user: req.user._id 
     });
 
-    if (!entry)
+    if (!entry) // If the entry is not found
       return res.status(404).json({ error: 'Entry not found' });
 
     res.json(entry);
@@ -45,13 +45,14 @@ router.get('/:id', verifyToken, async (req, res) => {
 ============================= */
 router.post('/', verifyToken, async (req, res) => {
   try {
-    const { title, content, feelings, mapId } = req.body;
+    const { title, content, feelings, influences, mapId } = req.body; // i had to add influences to the backend (Andy)
 
     const entry = await Journal.create({
       user: req.user._id,
       title,
       content,
       feelings,
+      influences,
       mapId
     });
 
@@ -67,7 +68,7 @@ router.post('/', verifyToken, async (req, res) => {
 ============================= */
 router.put('/:id', verifyToken, async (req, res) => {
   try {
-    const { title, content, feelings, mapId } = req.body;
+    const { title, content, feelings, influences, mapId } = req.body;  // (Andy) i had to add influences to the backend
 
     const entry = await Journal.findOneAndUpdate(
       { _id: req.params.id, user: req.user._id },
@@ -75,6 +76,7 @@ router.put('/:id', verifyToken, async (req, res) => {
         title,
         content,
         feelings,
+        influences,
         mapId,
         updatedAt: new Date()
       },

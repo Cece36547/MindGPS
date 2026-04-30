@@ -1,7 +1,7 @@
 import admin from '../config/firebase-admin.js';
 import { User } from '../models/user.model.js';
 
-export async function verifyToken(req, res, next) {
+export async function verifyToken(req, res, next) { // this connects firebase user to mongodb user
   const authHeader = req.headers.authorization;
 
   if (!authHeader?.startsWith('Bearer ')) {

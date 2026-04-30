@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import './config/load-env.js';
 import express from 'express';
 import cors from 'cors';
 import { connectDB } from './config/db.js';
@@ -20,7 +20,7 @@ app.use('/api/maps', mapRoutes);
 app.use('/api/journals', journalRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
-const PORT = 5050;
+const PORT = Number(process.env.PORT) || 5050;
 
 connectDB().then(() => {
   app.listen(PORT, "0.0.0.0", () =>

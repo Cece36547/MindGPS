@@ -1,6 +1,5 @@
 import admin from 'firebase-admin';
-import { config } from 'dotenv';
-config({ path: new URL('../.env', import.meta.url).pathname });
+import './load-env.js';
 
 const serviceAccount = {
   type: "service_account",

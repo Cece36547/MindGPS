@@ -1,5 +1,5 @@
 /*IMPORTANT FOR TEAM MEMBERS PLEASE RUN "npm install node-cron" to download info to run!!!! -AYANNA */
-
+// thank you Ayanna (Andy)
 import cron from 'node-cron';
 import { Map } from '../models/map.model.js';
 import { getWeekKey } from '../utils/getWeekKey.js';
