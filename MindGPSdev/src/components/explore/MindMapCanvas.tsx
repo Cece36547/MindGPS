@@ -1,10 +1,77 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Check, ChevronRight, Maximize2, Minimize2, Plus } from '@/lib/lucide-icons';
 import type { Bubble, BubbleType } from '@/types/types';
 import { COLORS, SUGGESTIONS } from '@/components/explore/constants';
 import { DraggableBubble } from '@/components/explore/DraggableBubble';
+import { useAuth } from '@/context/AuthContext';
+import {
+  DEFAULT_WEEKLY_CONCEPT_MAP_TITLE,
+  bubblesToWeeklyConceptMapPayload,
+  weeklyConceptMapToBubbles,
+} from '@/lib/conceptMapAdapters';
+import {
+  getCurrentWeeklyConceptMap,
+  saveCurrentWeeklyConceptMap,
+} from '@/services/conceptMapApi';
+
+// (Andy) This delay keeps typing and quick edits from spamming the backend.
+const MAP_SAVE_DEBOUNCE_MS = 500;
+
+// (Andy) Local cache is scoped by Firebase UID so users do not share fallback maps.
+const getMapStorageKey = (userId: string) => `mindgps_stitch_map:${userId}`;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+// (Andy) These guards keep old or broken localStorage data from crashing the canvas.
+const isBubbleType = (value: unknown): value is BubbleType =>
+  value === 'root' || value === 'emotion' || value === 'thought' || value === 'suggestion';
+
+const isCachedBubble = (value: unknown): value is Bubble => {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const badge = value.badge;
+
+  return (
+    typeof value.id === 'string' &&
+    typeof value.text === 'string' &&
+    typeof value.x === 'number' &&
+    typeof value.y === 'number' &&
+    (typeof value.parentId === 'string' || value.parentId === null) &&
+    isBubbleType(value.type) &&
+    typeof value.color === 'string' &&
+    (badge === undefined || typeof badge === 'string')
+  );
+};
+
+// (Andy) Read the local fallback copy if the backend cannot load.
+const readCachedBubbles = (userId: string): Bubble[] => {
+  try {
+    const saved = localStorage.getItem(getMapStorageKey(userId));
+    const parsed: unknown = saved ? JSON.parse(saved) : null;
+
+    return Array.isArray(parsed) && parsed.every(isCachedBubble) ? parsed : [];
+  } catch (error) {
+    console.error('Failed to read cached concept map:', error);
+    return [];
+  }
+};
+
+// (Andy) Keep a local copy so the map still works through temporary backend failures.
+const writeCachedBubbles = (userId: string, bubbles: Bubble[]) => {
+  try {
+    localStorage.setItem(getMapStorageKey(userId), JSON.stringify(bubbles));
+  } catch (error) {
+    console.error('Failed to cache concept map:', error);
+  }
+};
 
 export const MindMapCanvas = () => {
+  // (Andy) The current Firebase user decides which weekly map we load and save.
+  const { currentUser } = useAuth();
+  const userId = currentUser?.uid ?? null;
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -12,19 +79,150 @@ export const MindMapCanvas = () => {
   const [customText, setCustomText] = useState('');
   const [pendingParentId, setPendingParentId] = useState<string | null>(null);
   const [camera, setCamera] = useState({ x: 0, y: 0, scale: 1 });
+  const [mapTitle, setMapTitle] = useState(DEFAULT_WEEKLY_CONCEPT_MAP_TITLE);
+  const [isMapLoading, setIsMapLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // (Andy) Refs let drag handlers read the latest state without waiting on React renders.
+  const bubblesRef = useRef<Bubble[]>([]);
+  const hasLoadedMapRef = useRef(false);
+  const saveTimerRef = useRef<number | null>(null);
+  const inFlightSaveRef = useRef(false);
+  const queuedSaveRef = useRef<Bubble[] | null>(null);
+
+  const setBubbleSnapshot = useCallback((nextBubbles: Bubble[]) => {
+    // (Andy) Update the visible state and the drag-safe ref together.
+    bubblesRef.current = nextBubbles;
+    setBubbles(nextBubbles);
+  }, []);
+
+  const flushSave = useCallback(
+    async (initialBubbles: Bubble[]) => {
+      // (Andy) Do not save until Firebase auth and the first map load are ready.
+      if (!userId || !hasLoadedMapRef.current) {
+        return;
+      }
+
+      // (Andy) If a save is already running, remember the newest map and save it next.
+      if (inFlightSaveRef.current) {
+        queuedSaveRef.current = initialBubbles;
+        return;
+      }
+
+      inFlightSaveRef.current = true;
+      setIsSaving(true);
+
+      let nextSnapshot: Bubble[] | null = initialBubbles;
+
+      // (Andy) This loop saves the latest queued version after any in-flight save finishes.
+      while (nextSnapshot) {
+        const snapshot = nextSnapshot;
+        nextSnapshot = null;
+
+        try {
+          await saveCurrentWeeklyConceptMap(
+            bubblesToWeeklyConceptMapPayload(snapshot, mapTitle)
+          );
+          setSaveError(null);
+        } catch (error) {
+          console.error('Failed to save concept map:', error);
+          setSaveError('Map changes are saved here, but not synced yet.');
+        }
+
+        nextSnapshot = queuedSaveRef.current;
+        queuedSaveRef.current = null;
+      }
+
+      inFlightSaveRef.current = false;
+      setIsSaving(false);
+    },
+    [mapTitle, userId]
+  );
+
+  const schedulePersistence = useCallback(
+    (nextBubbles: Bubble[], delay = MAP_SAVE_DEBOUNCE_MS) => {
+      // (Andy) Local state can change before backend sync is allowed.
+      if (!userId || !hasLoadedMapRef.current) {
+        return;
+      }
+
+      writeCachedBubbles(userId, nextBubbles);
+
+      if (saveTimerRef.current !== null) {
+        window.clearTimeout(saveTimerRef.current);
+      }
+
+      saveTimerRef.current = window.setTimeout(() => {
+        saveTimerRef.current = null;
+        void flushSave(nextBubbles);
+      }, delay);
+    },
+    [flushSave, userId]
+  );
 
   useEffect(() => {
-    const saved = localStorage.getItem('mindgps_stitch_map');
-    if (saved) {
-      setBubbles(JSON.parse(saved));
-    }
+    return () => {
+      if (saveTimerRef.current !== null) {
+        window.clearTimeout(saveTimerRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('mindgps_stitch_map', JSON.stringify(bubbles));
-  }, [bubbles]);
+    let isActive = true;
+
+    // (Andy) Clear the canvas when there is no signed-in user.
+    if (!userId) {
+      hasLoadedMapRef.current = false;
+      setBubbleSnapshot([]);
+      return;
+    }
+
+    const loadWeeklyMap = async () => {
+      hasLoadedMapRef.current = false;
+      setIsMapLoading(true);
+      setMapError(null);
+      setSaveError(null);
+
+      try {
+        // (Andy) Load the current week's saved map when the concept map opens.
+        const map = await getCurrentWeeklyConceptMap();
+
+        if (!isActive) {
+          return;
+        }
+
+        const nextBubbles = weeklyConceptMapToBubbles(map);
+        setMapTitle(map.title || DEFAULT_WEEKLY_CONCEPT_MAP_TITLE);
+        setBubbleSnapshot(nextBubbles);
+        writeCachedBubbles(userId, nextBubbles);
+      } catch (error) {
+        console.error('Failed to load concept map:', error);
+
+        if (!isActive) {
+          return;
+        }
+
+        // (Andy) If the backend is down, keep the canvas usable with this user's last local copy.
+        setBubbleSnapshot(readCachedBubbles(userId));
+        setMapError('Could not sync your saved map. You can still keep working.');
+      } finally {
+        if (isActive) {
+          hasLoadedMapRef.current = true;
+          setIsMapLoading(false);
+        }
+      }
+    };
+
+    void loadWeeklyMap();
+
+    return () => {
+      isActive = false;
+    };
+  }, [setBubbleSnapshot, userId]);
 
   useEffect(() => {
     if (isEnteringCustom && inputRef.current) {
@@ -122,10 +320,12 @@ export const MindMapCanvas = () => {
     }
 
     const id = Math.random().toString(36).slice(2, 11);
-    const parent = bubbles.find((bubble) => bubble.id === parentId);
+    const currentBubbles = bubblesRef.current;
+    const parent = currentBubbles.find((bubble) => bubble.id === parentId);
     let x: number;
     let y: number;
 
+    // (Andy) Child bubbles start near their parent; new root bubbles start at screen center.
     if (parent) {
       const angle = Math.random() * Math.PI * 2;
       const distance = 200;
@@ -148,8 +348,10 @@ export const MindMapCanvas = () => {
       color: COLORS.thought,
       badge: type === 'emotion' ? text.toUpperCase() : undefined,
     };
+    const nextBubbles = [...currentBubbles, newBubble];
 
-    setBubbles((prev) => [...prev, newBubble]);
+    setBubbleSnapshot(nextBubbles);
+    schedulePersistence(nextBubbles);
     setIsAdding(false);
     setIsEnteringCustom(false);
     setCustomText('');
@@ -205,35 +407,41 @@ export const MindMapCanvas = () => {
 
   const removeBubble = (id: string) => {
     const toRemove = new Set([id]);
+    const currentBubbles = bubblesRef.current;
     let count = 0;
 
+    // (Andy) Deleting a parent also deletes all of its child bubbles.
     while (count !== toRemove.size) {
       count = toRemove.size;
-      bubbles.forEach((bubble) => {
+      currentBubbles.forEach((bubble) => {
         if (bubble.parentId && toRemove.has(bubble.parentId)) {
           toRemove.add(bubble.id);
         }
       });
     }
 
-    setBubbles((prev) => prev.filter((bubble) => !toRemove.has(bubble.id)));
+    const nextBubbles = currentBubbles.filter((bubble) => !toRemove.has(bubble.id));
+
+    setBubbleSnapshot(nextBubbles);
+    schedulePersistence(nextBubbles);
     if (selectedId && toRemove.has(selectedId)) {
       setSelectedId(null);
     }
   };
 
   const updatePosition = (id: string, dx: number, dy: number) => {
+    // (Andy) Convert screen movement into canvas movement so dragging works while zoomed.
     const worldDx = dx / camera.scale;
     const worldDy = dy / camera.scale;
-
-    setBubbles((prev) =>
-      prev.map((bubble) =>
-        bubble.id === id ? { ...bubble, x: bubble.x + worldDx, y: bubble.y + worldDy } : bubble
-      )
+    const nextBubbles = bubblesRef.current.map((bubble) =>
+      bubble.id === id ? { ...bubble, x: bubble.x + worldDx, y: bubble.y + worldDy } : bubble
     );
+
+    setBubbleSnapshot(nextBubbles);
   };
 
   const renderConnections = useMemo(() => {
+    // (Andy) Connections are drawn from each child bubble back to its parent.
     return bubbles.map((bubble) => {
       if (!bubble.parentId) {
         return null;
@@ -260,6 +468,12 @@ export const MindMapCanvas = () => {
     });
   }, [bubbles, camera.scale]);
 
+  const syncStatus = isMapLoading
+    ? 'Loading saved map...'
+    : isSaving
+      ? 'Saving map...'
+      : saveError ?? mapError;
+
   return (
     <div
       ref={containerRef}
@@ -276,6 +490,11 @@ export const MindMapCanvas = () => {
         <div className="rounded-full border border-white/60 bg-white/40 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400 shadow-sm backdrop-blur-md">
           {Math.round(camera.scale * 100)}% Focus
         </div>
+        {syncStatus && (
+          <div className="max-w-[240px] rounded-2xl border border-white/60 bg-white/60 px-3 py-2 text-right text-[11px] font-semibold text-slate-500 shadow-sm backdrop-blur-md">
+            {syncStatus}
+          </div>
+        )}
       </div>
 
       {bubbles.length === 0 && (
@@ -305,6 +524,7 @@ export const MindMapCanvas = () => {
               canvasScale={camera.scale}
               onDelete={() => removeBubble(bubble.id)}
               onDrag={(dx, dy) => updatePosition(bubble.id, dx, dy)}
+              onDragEnd={() => schedulePersistence(bubblesRef.current)}
               onSelect={() => {
                 setSelectedId(bubble.id);
                 focusOnBubble(bubble.x, bubble.y, Math.max(camera.scale, 0.8));

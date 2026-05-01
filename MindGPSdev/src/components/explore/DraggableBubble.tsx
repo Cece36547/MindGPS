@@ -2,6 +2,7 @@ import React from 'react';
 import { Plus, X } from '@/lib/lucide-icons';
 import type { DraggableBubbleProps } from '@/types/types';
 
+// (Andy) This component only renders and drags one bubble; the canvas owns the data.
 interface ExtendedDraggableBubbleProps extends DraggableBubbleProps {
   canvasScale: number;
 }
@@ -12,19 +13,24 @@ export const DraggableBubble: React.FC<ExtendedDraggableBubbleProps> = ({
   canvasScale,
   onDelete,
   onDrag,
+  onDragEnd,
   onSelect,
   onAddChild,
 }) => {
+  // (Andy) Child bubbles are smaller so parent bubbles feel more important.
   const size = bubble.parentId ? 130 : 160;
   const labelOpacity = Math.max(0, Math.min(1, (canvasScale - 0.3) * 2));
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     event.stopPropagation();
 
+    // (Andy) Track movement by pointer deltas so zoom math can live in the canvas.
     let lastX = event.clientX;
     let lastY = event.clientY;
+    let didMove = false;
 
     const handleMove = (moveEvent: PointerEvent) => {
+      didMove = true;
       onDrag(moveEvent.clientX - lastX, moveEvent.clientY - lastY);
       lastX = moveEvent.clientX;
       lastY = moveEvent.clientY;
@@ -33,6 +39,11 @@ export const DraggableBubble: React.FC<ExtendedDraggableBubbleProps> = ({
     const handleUp = () => {
       window.removeEventListener('pointermove', handleMove);
       window.removeEventListener('pointerup', handleUp);
+
+      // (Andy) Save after the drag ends, not during every pointer movement.
+      if (didMove) {
+        onDragEnd();
+      }
     };
 
     window.addEventListener('pointermove', handleMove);

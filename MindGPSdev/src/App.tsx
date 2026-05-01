@@ -8,7 +8,7 @@ import type { JournalEntry } from "@/types/journal";
 import { createJournal, getJournals } from "@/lib/journalApi";
 import { useAuth } from "@/context/AuthContext";
 
-// (Andy) App.tsx is only switching landing mood home and explore pages
+// (Andy) App.tsx decides which main screen the signed-in user sees.
 function App() {
   const { currentUser, loading } = useAuth();
   const [page, setPage] = useState<"mood" | "home" | "explore">("home");
@@ -17,6 +17,7 @@ function App() {
   const [journalError, setJournalError] = useState<string | null>(null);
 
   const journalToMoodEntry = (journal: JournalEntry): MoodEntry => {
+    // (Andy) Journals come from MongoDB, then the home page reads them as mood entries.
     return {
       feeling: journal.feelings?.[0] ?? "Reflective",
       influences: journal.influences ?? [],
@@ -28,8 +29,7 @@ function App() {
   const addMoodEntry = async (entry: MoodEntry) => {
     try {
       setJournalError(null);
-      // i am integrating MongoDB here, so instead of just adding the entry to the local state, I will save it to MongoDB first and then update the state with the saved version 
-      // andy: Save the entry to MongoDB first, then update the UI with the saved version.
+      // (Andy) Save the entry to MongoDB first, then show the saved version in the UI.
       const savedJournal = await createJournal({
         title: entry.feeling ? `${entry.feeling} Check-In` : "Untitled Entry",
         content: entry.note,
@@ -46,6 +46,7 @@ function App() {
   };
 
   useEffect(() => {
+    // (Andy) When the user logs out, reset local app state.
     if (!currentUser) {
       setPage("home");
       setMoodEntries([]);
@@ -58,7 +59,7 @@ function App() {
         setJournalLoading(true);
         setJournalError(null);
 
-        // andy: When the user logs in, load their saved journal entries from MongoDB.
+        // (Andy) When the user logs in, load their saved journal entries from MongoDB.
         const journals = await getJournals();
 
         setMoodEntries(journals.map(journalToMoodEntry));
@@ -107,20 +108,31 @@ function App() {
     );
   }
 
-  return page === "mood" ? (
-    <MoodCheckIn
-      onSave={() => setPage("home")}
-      onBack={() => setPage("home")}
-      onAddEntry={addMoodEntry}
-    />
-  ) : page === "explore" ? (
-    <ExplorePage onBack={() => setPage("home")} />
-  ) : (
-    <HomePage
-      entries={moodEntries}
-      onOpenExplore={() => setPage("explore")}
-      onAddEntry={addMoodEntry}
-    />
+  return (
+    <>
+      {/* (Andy) Show journal sync errors without blocking the rest of the app. */}
+      {journalError && (
+        <div className="fixed top-4 left-1/2 z-[200] max-w-sm -translate-x-1/2 rounded-2xl border border-rose-200 bg-white/95 px-4 py-3 text-center text-sm font-medium text-rose-600 shadow-xl">
+          {journalError}
+        </div>
+      )}
+
+      {page === "mood" ? (
+        <MoodCheckIn
+          onSave={() => setPage("home")}
+          onBack={() => setPage("home")}
+          onAddEntry={addMoodEntry}
+        />
+      ) : page === "explore" ? (
+        <ExplorePage onBack={() => setPage("home")} />
+      ) : (
+        <HomePage
+          entries={moodEntries}
+          onOpenExplore={() => setPage("explore")}
+          onAddEntry={addMoodEntry}
+        />
+      )}
+    </>
   );
 }
 
