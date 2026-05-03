@@ -66,7 +66,7 @@ router.post('/', verifyToken, async (req, res) => {
 /* =============================
    UPDATE journal entry
 ============================= */
-router.put('/:id', verifyToken, async (req, res) => {
+router.put('/:id', verifyToken, async (req, res) => { // endpoint for updating a journal entry
   try {
     const { title, content, feelings, influences, mapId } = req.body;  // (Andy) i had to add influences to the backend
 
@@ -98,6 +98,7 @@ router.put('/:id', verifyToken, async (req, res) => {
 ============================= */
 router.delete('/:id', verifyToken, async (req, res) => {
   try {
+    // (Andy) Delete only the signed-in user's matching MongoDB journal entry.
     const entry = await Journal.findOneAndDelete({
       _id: req.params.id,
       user: req.user._id
@@ -106,10 +107,10 @@ router.delete('/:id', verifyToken, async (req, res) => {
     if (!entry)
       return res.status(404).json({ error: 'Entry not found' });
 
-    res.json({ message: 'Entry deleted' });
+    res.json({ message: 'Entry deleted' }); // i noticed cierra created a delete endpoint
   } catch (err) {
     console.error('DELETE journal error:', err);
-    res.status(500).json({ error: 'Failed to delete entry' });
+    res.status(500).json({ error: 'Failed to delete entry' }); // so i need to reflect these backend changes in the frontend
   }
 });
 

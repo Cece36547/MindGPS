@@ -8,11 +8,17 @@ import journalRoutes from './routes/journal.routes.js';
 import { startWeeklyReset } from './cron/weeklyReset.js';
 
 const app = express();
+// (Andy) Keep CORS explicit so local Vite can call the API with Firebase auth.
+const allowedOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173'];
+
 app.get("/", (req, res) => {
   res.send("MindGPS API is running 🚀");
 });
 
-app.use(cors());
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+}));
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
@@ -22,11 +28,16 @@ app.use('/api/journals', journalRoutes);
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 const PORT = Number(process.env.PORT) || 5050;
 
-connectDB().then(() => {
-  app.listen(PORT, "0.0.0.0", () =>
-    console.log(`Server running on port ${PORT}`)
-  );
+// (Andy) Start listening before Mongo finishes so port 5050 is never hidden behind a slow DB connection.
+app.listen(PORT, "0.0.0.0", () =>
+  console.log(`Server running on port ${PORT}`)
+);
 
-  // start weekly reset job
-  startWeeklyReset();
-});
+connectDB()
+  .then(() => {
+    startWeeklyReset();
+  })
+  .catch((err) => {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`MongoDB connection failed: ${message}`);
+  });

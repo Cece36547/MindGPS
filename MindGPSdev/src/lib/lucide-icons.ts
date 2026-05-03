@@ -1,17 +1,18 @@
-export {
-  ArrowLeft,
-  BookOpen,
-  Brain,
-  ChartNoAxesColumn,
-  Check,
-  ChevronRight,
-  Flame,
-  Maximize2,
-  Minimize2,
-  Network,
-  Plus,
-  RotateCcw,
-  Trash2,
-  Wind,
-  X,
-} from "lucide-react"
+// (Andy) Deep icon exports keep Vite from scanning the full lucide barrel.
+export { default as ArrowLeft } from "lucide-react/dist/esm/icons/arrow-left.mjs"
+export { default as BookOpen } from "lucide-react/dist/esm/icons/book-open.mjs"
+export { default as Brain } from "lucide-react/dist/esm/icons/brain.mjs"
+export { default as ChartNoAxesColumn } from "lucide-react/dist/esm/icons/chart-no-axes-column.mjs"
+export { default as Check } from "lucide-react/dist/esm/icons/check.mjs"
+export { default as ChevronRight } from "lucide-react/dist/esm/icons/chevron-right.mjs"
+export { default as Flame } from "lucide-react/dist/esm/icons/flame.mjs"
+export { default as Maximize2 } from "lucide-react/dist/esm/icons/maximize-2.mjs"
+export { default as Minimize2 } from "lucide-react/dist/esm/icons/minimize-2.mjs"
+export { default as Network } from "lucide-react/dist/esm/icons/network.mjs"
+export { default as Pencil } from "lucide-react/dist/esm/icons/pencil.mjs"
+export { default as Plus } from "lucide-react/dist/esm/icons/plus.mjs"
+export { default as RotateCcw } from "lucide-react/dist/esm/icons/rotate-ccw.mjs"
+export { default as Save } from "lucide-react/dist/esm/icons/save.mjs"
+export { default as Trash2 } from "lucide-react/dist/esm/icons/trash-2.mjs"
+export { default as Wind } from "lucide-react/dist/esm/icons/wind.mjs"
+export { default as X } from "lucide-react/dist/esm/icons/x.mjs"

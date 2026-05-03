@@ -1,6 +1,8 @@
 
 export type JournalEntry = { // Represents a journal entry
-  _id: string;
+  // (Andy) MongoDB can come back as _id, while some API shapes may normalize to id.
+  _id?: string;
+  id?: string;
   user: string;
   mapId: string | null;
   title: string;
@@ -22,9 +24,10 @@ export type CreateJournalPayload = { // The payload for creating a new journal e
 };
 
 export type UpdateJournalPayload = { // The payload for updating an existing journal entry
-  title?: string;
-  content?: string;
-  feelings?: string[];
-  influences?: string[];
-  mapId?: string | null;
+  // (Andy) Match the backend PUT route exactly so edits save without reshaping.
+  title: string;
+  content: string;
+  feelings: string[];
+  influences: string[];
+  mapId: string | null;
 };

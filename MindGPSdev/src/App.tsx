@@ -4,8 +4,13 @@ import MoodCheckIn from "./pages/MoodCheckIn";
 import HomePage from "./pages/HomePage";
 import ExplorePage from "./pages/ExplorePage";
 import type { MoodEntry } from "@/types/mood";
-import type { JournalEntry } from "@/types/journal";
-import { createJournal, getJournals } from "@/lib/journalApi";
+import type { JournalEntry, UpdateJournalPayload } from "@/types/journal";
+import {
+  createJournal,
+  deleteJournal,
+  getJournals,
+  updateJournal,
+} from "@/lib/journalApi";
 import { useAuth } from "@/context/AuthContext";
 
 // (Andy) App.tsx decides which main screen the signed-in user sees.
@@ -17,12 +22,16 @@ function App() {
   const [journalError, setJournalError] = useState<string | null>(null);
 
   const journalToMoodEntry = (journal: JournalEntry): MoodEntry => {
-    // (Andy) Journals come from MongoDB, then the home page reads them as mood entries.
+    // (Andy) Keep MongoDB metadata on the mood-shaped entry so edit/delete can target the saved journal.
     return {
+      journalId: journal._id ?? journal.id,
+      title: journal.title,
       feeling: journal.feelings?.[0] ?? "Reflective",
       influences: journal.influences ?? [],
       note: journal.content,
+      mapId: journal.mapId,
       createdAt: journal.createdAt,
+      updatedAt: journal.updatedAt,
     };
   };
 
@@ -42,6 +51,43 @@ function App() {
     } catch (error) {
       console.error("Failed to save journal entry:", error);
       setJournalError("Could not save your journal entry. Please try again.");
+    }
+  };
+
+  const editMoodEntry = async (
+    journalId: string,
+    payload: UpdateJournalPayload
+  ) => {
+    try {
+      setJournalError(null);
+      // (Andy) Update the saved journal, then replace only that one entry in local state.
+      const updatedJournal = await updateJournal(journalId, payload);
+
+      setMoodEntries((prev) =>
+        prev.map((entry) =>
+          entry.journalId === journalId ? journalToMoodEntry(updatedJournal) : entry
+        )
+      );
+    } catch (error) {
+      console.error("Failed to edit journal entry:", error);
+      setJournalError("Could not save those journal changes. Please try again.");
+      throw error;
+    }
+  };
+
+  const removeMoodEntry = async (journalId: string) => {
+    try {
+      setJournalError(null);
+      // (Andy) Delete in MongoDB first, then remove the entry from the Journal list.
+      await deleteJournal(journalId);
+
+      setMoodEntries((prev) =>
+        prev.filter((entry) => entry.journalId !== journalId)
+      );
+    } catch (error) {
+      console.error("Failed to delete journal entry:", error);
+      setJournalError("Could not delete that journal entry. Please try again.");
+      throw error;
     }
   };
 
@@ -130,6 +176,8 @@ function App() {
           entries={moodEntries}
           onOpenExplore={() => setPage("explore")}
           onAddEntry={addMoodEntry}
+          onEditEntry={editMoodEntry}
+          onDeleteEntry={removeMoodEntry}
         />
       )}
     </>
