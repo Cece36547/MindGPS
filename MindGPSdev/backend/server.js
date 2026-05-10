@@ -6,6 +6,7 @@ import authRoutes from './routes/auth.routes.js';
 import mapRoutes from './routes/map.routes.js';
 import journalRoutes from './routes/journal.routes.js';
 import { startWeeklyReset } from './cron/weeklyReset.js';
+import communityRoutes from "./routes/community.routes.js";
 
 const app = express();
 // (Andy) Keep CORS explicit so local Vite can call the API with Firebase auth.
@@ -24,6 +25,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/maps', mapRoutes);
 app.use('/api/journals', journalRoutes);
+app.use('/api/community', communityRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 const PORT = Number(process.env.PORT) || 5050;
