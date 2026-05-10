@@ -11,9 +11,8 @@ const journalSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
-journalSchema.pre('save', function(next) {
+journalSchema.pre('save', function() {
   this.updatedAt = new Date();
-  //next(); ( Andy I am commenting this out to see if it fixes the issue with the journal entries not saving to MongoDB. I think the problem might be that the next() function is not being called, which means that the save operation is never completed. By commenting this out, I am allowing the save operation to complete without any issues. )
 });
 
 export const Journal = mongoose.model('Journal', journalSchema);

@@ -7,7 +7,7 @@ declare module "lucide-react/dist/esm/icons/*.js" {
   export default icon
 }
 
-declare module "lucide-react/dist/esm/icons/*.mjs" {
+declare module "lucide-react/dist/esm/icons/*.mjs" { // (Andy) For the ESM version of the icons
   import type { LucideIcon } from "lucide-react"
 
   const icon: LucideIcon

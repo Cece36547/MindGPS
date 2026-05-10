@@ -1,7 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Check, ChevronRight, Maximize2, Minimize2, Plus } from '@/lib/lucide-icons';
-import type { Bubble, BubbleType } from '@/types/types';
-import { COLORS, SUGGESTIONS } from '@/components/explore/constants';
+import { ArrowLeft, Check, Maximize2, Minimize2, Plus } from '@/lib/lucide-icons';
+import type { Bubble, BubbleActionType, BubbleType } from '@/types/types';
+import {
+  CHECK_IN_BUBBLE_COLOR,
+  EMOTION_GROUPS,
+  FOLLOW_UP_BUBBLE_COLORS,
+  THOUGHT_BUBBLE_COLOR,
+  getEmotionOptionByLabel,
+  getFollowUpAction,
+} from '@/components/explore/constants';
 import { DraggableBubble } from '@/components/explore/DraggableBubble';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -19,6 +26,17 @@ const MAP_SAVE_DEBOUNCE_MS = 500;
 
 // (Andy) Local cache is scoped by Firebase UID so users do not share fallback maps.
 const getMapStorageKey = (userId: string) => `mindgps_stitch_map:${userId}`;
+
+const createBubbleId = () => Math.random().toString(36).slice(2, 11);
+
+const getSnapshotLabel = () => {
+  const time = new Intl.DateTimeFormat(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date());
+
+  return `Today, ${time}`;
+};
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
@@ -77,7 +95,9 @@ export const MindMapCanvas = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [isEnteringCustom, setIsEnteringCustom] = useState(false);
   const [customText, setCustomText] = useState('');
+  const [selectedEmotions, setSelectedEmotions] = useState<string[]>([]);
   const [pendingParentId, setPendingParentId] = useState<string | null>(null);
+  const [pendingDetailAction, setPendingDetailAction] = useState<BubbleActionType | null>(null);
   const [camera, setCamera] = useState({ x: 0, y: 0, scale: 1 });
   const [mapTitle, setMapTitle] = useState(DEFAULT_WEEKLY_CONCEPT_MAP_TITLE);
   const [isMapLoading, setIsMapLoading] = useState(false);
@@ -314,12 +334,53 @@ export const MindMapCanvas = () => {
     zoomAtPoint(center.x, center.y, targetScale);
   };
 
-  const addBubble = (text: string, type: BubbleType, parentId: string | null = null) => {
+  const resetAddFlow = () => {
+    setIsAdding(false);
+    setIsEnteringCustom(false);
+    setCustomText('');
+    setSelectedEmotions([]);
+    setPendingParentId(null);
+    setPendingDetailAction(null);
+  };
+
+  const openEmotionSelector = () => {
+    // (Andy) Opens the emotion selector before creating map bubbles.
+    setPendingParentId(null);
+    setPendingDetailAction(null);
+    setCustomText('');
+    setSelectedEmotions([]);
+    setIsEnteringCustom(false);
+    setIsAdding(true);
+  };
+
+  const openDetailComposer = (parentId: string, actionType: BubbleActionType = 'thought') => {
+    setPendingParentId(parentId);
+    setPendingDetailAction(actionType);
+    setCustomText('');
+    setIsEnteringCustom(true);
+    setIsAdding(true);
+  };
+
+  const toggleEmotion = (emotion: string) => {
+    setSelectedEmotions((current) =>
+      current.includes(emotion)
+        ? current.filter((selectedEmotion) => selectedEmotion !== emotion)
+        : [...current, emotion]
+    );
+  };
+
+  const addBubble = (
+    text: string,
+    type: BubbleType,
+    parentId: string | null = null,
+    color = THOUGHT_BUBBLE_COLOR,
+    badge?: string
+  ) => {
     if (!text.trim()) {
       return;
     }
 
-    const id = Math.random().toString(36).slice(2, 11);
+    const id = createBubbleId();
     const currentBubbles = bubblesRef.current;
     const parent = currentBubbles.find((bubble) => bubble.id === parentId);
     let x: number;
@@ -345,19 +406,77 @@ export const MindMapCanvas = () => {
       y,
       parentId,
       type,
-      color: COLORS.thought,
-      badge: type === 'emotion' ? text.toUpperCase() : undefined,
+      color,
+      badge: badge ?? (type === 'emotion' ? text.toUpperCase() : undefined),
     };
     const nextBubbles = [...currentBubbles, newBubble];
 
     setBubbleSnapshot(nextBubbles);
     schedulePersistence(nextBubbles);
-    setIsAdding(false);
-    setIsEnteringCustom(false);
-    setCustomText('');
-    setPendingParentId(null);
+    resetAddFlow();
     setSelectedId(id);
     focusOnBubble(x, y, 1.2);
+  };
+
+  const addFollowUpBubble = () => {
+    if (!pendingParentId || !customText.trim()) {
+      return;
+    }
+
+    const action = getFollowUpAction(pendingDetailAction);
+    addBubble(
+      `${action.bubblePrefix}: ${customText.trim()}`,
+      'thought',
+      pendingParentId,
+      FOLLOW_UP_BUBBLE_COLORS[action.id],
+      action.bubblePrefix.toUpperCase()
+    );
+  };
+
+  const addEmotionalSnapshot = () => {
+    if (selectedEmotions.length === 0) {
+      return;
+    }
+
+    const center = getCanvasCenter();
+    const worldCenter = getWorldPoint(center.x, center.y);
+    const checkInId = createBubbleId();
+    const radius = selectedEmotions.length === 1 ? 220 : Math.min(320, 220 + selectedEmotions.length * 10);
+
+    const checkInBubble: Bubble = {
+      id: checkInId,
+      text: getSnapshotLabel(),
+      x: worldCenter.x,
+      y: worldCenter.y,
+      parentId: null,
+      type: 'root',
+      color: CHECK_IN_BUBBLE_COLOR,
+      badge: 'CHECK-IN',
+    };
+
+    const emotionBubbles: Bubble[] = selectedEmotions.map((emotion, index) => {
+      const emotionOption = getEmotionOptionByLabel(emotion);
+      const angle = -Math.PI / 2 + (Math.PI * 2 * index) / selectedEmotions.length;
+
+      return {
+        id: createBubbleId(),
+        text: emotion,
+        x: worldCenter.x + Math.cos(angle) * radius,
+        y: worldCenter.y + Math.sin(angle) * radius,
+        parentId: checkInId,
+        type: 'emotion',
+        color: emotionOption?.color ?? THOUGHT_BUBBLE_COLOR,
+        badge: emotionOption?.family.toUpperCase() ?? emotion.toUpperCase(),
+      };
+    });
+
+    const nextBubbles = [...bubblesRef.current, checkInBubble, ...emotionBubbles];
+
+    setBubbleSnapshot(nextBubbles);
+    schedulePersistence(nextBubbles);
+    resetAddFlow();
+    setSelectedId(checkInId);
+    focusOnBubble(worldCenter.x, worldCenter.y, 0.95);
   };
 
   const handleBackgroundPan = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -473,6 +592,7 @@ export const MindMapCanvas = () => {
     : isSaving
       ? 'Saving map...'
       : saveError ?? mapError;
+  const pendingFollowUpAction = getFollowUpAction(pendingDetailAction);
 
   return (
     <div
@@ -529,10 +649,7 @@ export const MindMapCanvas = () => {
                 setSelectedId(bubble.id);
                 focusOnBubble(bubble.x, bubble.y, Math.max(camera.scale, 0.8));
               }}
-              onAddChild={() => {
-                setPendingParentId(bubble.id);
-                setIsAdding(true);
-              }}
+              onAddChild={(actionType) => openDetailComposer(bubble.id, actionType)}
             />
           ))}
         </div>
@@ -550,10 +667,7 @@ export const MindMapCanvas = () => {
 
           <button
             type="button"
-            onClick={() => {
-              setPendingParentId(null);
-              setIsAdding(true);
-            }}
+            onClick={openEmotionSelector}
             className="glass-sphere flex h-20 w-20 items-center justify-center rounded-full bg-white/20 text-slate-400 shadow-2xl ring-4 ring-white/10 transition-all hover:bg-white/40"
           >
             <Plus className="h-10 w-10" strokeWidth={1.5} />
@@ -572,50 +686,128 @@ export const MindMapCanvas = () => {
       {isAdding && (
         <div
           className="absolute inset-0 z-[100] flex items-center justify-center bg-slate-900/10 p-6 backdrop-blur-md"
-          onClick={() => setIsAdding(false)}
+          onClick={resetAddFlow}
         >
           <div
-            className="w-full max-w-sm rounded-[40px] border border-white/80 bg-white/90 p-8 shadow-2xl backdrop-blur-3xl"
+            className={`w-full border border-white/80 bg-white/85 shadow-2xl backdrop-blur-3xl ${
+              isEnteringCustom
+                ? 'max-w-md rounded-[36px] p-7'
+                : 'max-h-[calc(100vh-3rem)] max-w-4xl overflow-y-auto rounded-[40px] p-6 sm:p-8'
+            }`}
             onClick={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}
           >
             {!isEnteringCustom ? (
-              <div className="space-y-6">
-                <div className="space-y-2 text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">Capture Feeling</p>
-                  <h3 className="text-xl font-bold text-slate-800">What's rising up?</h3>
+              <div className="space-y-7">
+                <div className="mx-auto max-w-2xl space-y-3 text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-violet-400">Emotional Snapshot</p>
+                  <h3 className="text-2xl font-bold text-slate-800 sm:text-3xl">
+                    What are you feeling right now?
+                  </h3>
+                  <p className="text-sm leading-6 text-slate-500">
+                    Choose one or more emotions to begin mapping your pathway. Your emotions are a guide, not a destination.
+                  </p>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {SUGGESTIONS.map((suggestion) => (
-                    <button
-                      key={suggestion}
-                      type="button"
-                      onClick={() => addBubble(
-                        suggestion.charAt(0).toUpperCase() + suggestion.slice(1),
-                        'emotion',
-                        pendingParentId
-                      )}
-                      className="rounded-[24px] border border-slate-100 bg-white/50 p-5 text-[11px] font-bold capitalize text-slate-600 transition-all hover:border-indigo-100 hover:bg-indigo-50/50 squishy-btn"
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  {EMOTION_GROUPS.map((group) => (
+                    <div
+                      key={group.family}
+                      className="rounded-[28px] border border-white/70 bg-white/45 p-4 shadow-sm backdrop-blur-xl"
                     >
-                      {suggestion}
-                    </button>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                        {group.family}
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {group.emotions.map((emotion, emotionIndex) => {
+                          const isSelected = selectedEmotions.includes(emotion.label);
+
+                          return (
+                            <button
+                              key={emotion.label}
+                              type="button"
+                              onClick={() => toggleEmotion(emotion.label)}
+                              style={isSelected ? { background: emotion.color } : undefined}
+                              className={`rounded-full border px-3 py-2 text-[11px] font-bold transition-all squishy-btn ${
+                                isSelected
+                                  ? 'border-white/80 text-slate-800 shadow-md ring-2 ring-white/70'
+                                  : `${emotion.accent} hover:bg-white/80`
+                              } ${emotionIndex === 0 ? 'w-full justify-center' : ''}`}
+                            >
+                              {emotion.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   ))}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsEnteringCustom(true)}
-                  className="flex w-full items-center justify-between rounded-[24px] border border-slate-100 bg-slate-50 p-5 text-[11px] font-bold text-slate-400 transition-colors hover:bg-white"
-                >
-                  Add a Detail
-                  <ChevronRight className="h-4 w-4" />
-                </button>
+
+                <div className="rounded-[28px] border border-white/70 bg-white/55 p-4 shadow-sm backdrop-blur-xl">
+                  <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                    Selected emotions
+                  </p>
+                  <div className="flex min-h-10 flex-wrap gap-2">
+                    {selectedEmotions.length > 0 ? (
+                      selectedEmotions.map((emotion) => {
+                        const emotionOption = getEmotionOptionByLabel(emotion);
+
+                        return (
+                          <button
+                            key={emotion}
+                            type="button"
+                            onClick={() => toggleEmotion(emotion)}
+                            style={emotionOption ? { background: emotionOption.color } : undefined}
+                            className="rounded-full border border-white/80 px-3 py-2 text-[11px] font-bold text-slate-700 shadow-sm transition-transform hover:scale-[0.98]"
+                          >
+                            {emotion} ×
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <span className="text-sm font-medium text-slate-400">
+                        Choose at least one emotion.
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="rounded-full border border-white/70 bg-white/45 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                    Check-In → Emotion → Cause → Thought → Need → Next Step
+                  </div>
+                  <div className="flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={resetAddFlow}
+                      className="rounded-full border border-slate-200/70 bg-white/70 px-5 py-3 text-xs font-bold text-slate-500 shadow-sm transition-colors hover:bg-white squishy-btn"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={addEmotionalSnapshot}
+                      disabled={selectedEmotions.length === 0}
+                      className="rounded-full bg-indigo-600 px-5 py-3 text-xs font-bold text-white shadow-lg transition-all hover:bg-indigo-500 disabled:bg-slate-200 disabled:text-slate-400 squishy-btn"
+                    >
+                      Add Emotional Snapshot
+                    </button>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="space-y-6">
                 <div className="flex items-center gap-3">
-                  <button type="button" onClick={() => setIsEnteringCustom(false)} className="p-2 text-slate-400">
+                  <button type="button" onClick={resetAddFlow} className="p-2 text-slate-400">
                     <ArrowLeft className="h-5 w-5" />
                   </button>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Connect Thought</p>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      Connect {pendingFollowUpAction.bubblePrefix}
+                    </p>
+                    <h3 className="mt-1 text-xl font-bold text-slate-800">
+                      {pendingFollowUpAction.label}
+                    </h3>
+                  </div>
                 </div>
                 <div className="relative">
                   <input
@@ -625,19 +817,28 @@ export const MindMapCanvas = () => {
                     onChange={(e) => setCustomText(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
-                        addBubble(customText, 'thought', pendingParentId);
+                        addFollowUpBubble();
                       }
                     }}
-                    placeholder="Type something..."
+                    placeholder={pendingFollowUpAction.placeholder}
                     className="w-full rounded-[24px] border border-slate-100 bg-slate-50 p-5 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100"
                   />
                   <button
                     type="button"
-                    onClick={() => addBubble(customText, 'thought', pendingParentId)}
+                    onClick={addFollowUpBubble}
                     disabled={!customText.trim()}
                     className="absolute top-1/2 right-2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg transition-all disabled:bg-slate-200"
                   >
                     <Check className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={resetAddFlow}
+                    className="rounded-full border border-slate-200/70 bg-white/70 px-5 py-3 text-xs font-bold text-slate-500 shadow-sm transition-colors hover:bg-white squishy-btn"
+                  >
+                    Cancel
                   </button>
                 </div>
               </div>
