@@ -1,11 +1,25 @@
-import { useState, type FormEvent } from "react"
+import { useMemo, useState, type FormEvent } from "react"
 import { BurnBook } from "@/components/burnbook/BurnBook"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
 import type { MoodEntry } from "@/types/mood"
 import { CommunityPage } from "@/components/community/CommunityPage"
 import MoodCheckIn from "@/pages/MoodCheckIn"
 import { useAuth } from "@/context/AuthContext"
 import type { UpdateJournalPayload } from "@/types/journal"
-import { Pencil, Save, Trash2, X } from "@/lib/lucide-icons"
+import {
+  BookOpen,
+  Brain,
+  ChartNoAxesColumn,
+  ChevronRight,
+  Flame,
+  Network,
+  Pencil,
+  Save,
+  Trash2,
+  Wind,
+  X,
+} from "@/lib/lucide-icons"
 // (Andy) HomePage is the main dashboard after the mood check-in, with sidebar tabs for the core MVP spaces and a main content area for the selected view.
 const motivationalQuotes = [
   "Every day is a new beginning. Take a deep breath and start again.",
@@ -41,17 +55,23 @@ const journalInfluenceOptions = [
   "exercise",
 ]
 // (Andy) the HomePage component is meant to feel calm and supportive while people move between reflection, exploration, community, and the burn book.
-type HomePageProps = {
+type HomePageProps = { // Props for the HomePage component
   entries: MoodEntry[]
   onOpenExplore: () => void
   onAddEntry: (entry: MoodEntry) => void
-  onEditEntry: (journalId: string, payload: UpdateJournalPayload) => Promise<void>
+  onEditEntry: (
+    journalId: string,
+    payload: UpdateJournalPayload
+  ) => Promise<void>
   onDeleteEntry: (journalId: string) => Promise<void>
 }
-type JournalSectionProps = {
+type JournalSectionProps = { // Props for the JournalSection component
   entries: MoodEntry[]
   onAddEntry: (entry: MoodEntry) => void
-  onEditEntry: (journalId: string, payload: UpdateJournalPayload) => Promise<void>
+  onEditEntry: (
+    journalId: string,
+    payload: UpdateJournalPayload
+  ) => Promise<void>
   onDeleteEntry: (journalId: string) => Promise<void>
 }
 
@@ -61,13 +81,70 @@ type EditDraft = {
   note: string
   influences: string[]
 }
-
+// (Andy) Create an edit draft from a mood entry
 const createEditDraft = (entry: MoodEntry): EditDraft => ({
-  title: entry.title ?? (entry.feeling ? `${entry.feeling} Check-In` : "Untitled Entry"),
+  title:
+    entry.title ??
+    (entry.feeling ? `${entry.feeling} Check-In` : "Untitled Entry"),
   feeling: entry.feeling,
   note: entry.note,
   influences: entry.influences,
 })
+
+const formatStatLabel = (value: string) =>
+  value
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ")
+
+const formatEntryDate = (value?: string) => { // Format a date for display
+  if (!value) {
+    return "No reflections yet"
+  }
+
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date)
+}
+// MindGPS does not intend to provide medical advice or replace professional help. it is tool for personal reflection and support.
+const supportResources = [ // Support resources for mental health and crisis situations (Andy)
+  {
+    title: "988 Suicide & Crisis Lifeline",
+    description:
+      "Free, confidential crisis support in the U.S. Call or text 988, or visit to chat.",
+    href: "https://988lifeline.org/get-help/",
+    icon: Wind,
+  },
+  {
+    title: "SAMHSA FindTreatment.gov",
+    description:
+      "Search for mental health and substance use treatment providers by location.",
+    href: "https://findtreatment.gov/",
+    icon: ChartNoAxesColumn,
+  },
+  {
+    title: "NAMI Support Groups",
+    description:
+      "Find peer-led support groups and local NAMI chapters for community support.",
+    href: "https://www.nami.org/support-groups/",
+    icon: Network,
+  },
+  {
+    title: "BetterHelp Online Therapy Option",
+    description:
+      "Compare an online therapy option when virtual counseling feels easier to start.",
+    href: "https://www.betterhelp.com/online-therapy/",
+    icon: Brain,
+  },
+]
 
 // (Andy) the quote at the top helps keep the dashboard feeling warm without changing the layout underneath it.
 export default function HomePage({
@@ -86,8 +163,84 @@ export default function HomePage({
       motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]
   )
   const isBurnBookTab = activeTab === "burnbook"
+  const isHomeTab = activeTab === "home"
   // (Andy) hide the extra tab title on home so welcome back stays clean
-  const showTabTitle = !isBurnBookTab && activeTab !== "home"
+  const showTabTitle = !isBurnBookTab && !isHomeTab
+
+  // (Andy) This keeps the homepage focused on quick emotional insights.
+  const emotionalSnapshot = useMemo(() => {
+    const latestEntry = [...entries].sort((first, second) => {
+      const firstTime = Date.parse(first.createdAt)
+      const secondTime = Date.parse(second.createdAt)
+
+      return (
+        (Number.isNaN(secondTime) ? 0 : secondTime) -
+        (Number.isNaN(firstTime) ? 0 : firstTime)
+      )
+    })[0]
+
+    const influenceCounts = entries.reduce<Record<string, number>>(
+      (counts, entry) => {
+        entry.influences.forEach((influence) => {
+          counts[influence] = (counts[influence] ?? 0) + 1
+        })
+
+        return counts
+      },
+      {}
+    )
+
+    const mostCommonInfluence = Object.entries(influenceCounts).sort(
+      (first, second) => second[1] - first[1]
+    )[0]?.[0]
+
+    return {
+      mostRecentMood: latestEntry?.feeling
+        ? formatStatLabel(latestEntry.feeling)
+        : "No entries yet",
+      totalEntries: entries.length.toString(),
+      mostCommonInfluence: mostCommonInfluence
+        ? formatStatLabel(mostCommonInfluence)
+        : "No tags yet",
+      lastReflectionDate: formatEntryDate(latestEntry?.createdAt),
+    }
+  }, [entries])
+
+  const snapshotStats = [
+    {
+      label: "Most recent mood",
+      value: emotionalSnapshot.mostRecentMood,
+      helper:
+        entries.length > 0
+          ? "Latest saved check-in"
+          : "Start with a mood check-in",
+      icon: Brain,
+    },
+    {
+      label: "Journal entries",
+      value: emotionalSnapshot.totalEntries,
+      helper:
+        entries.length === 1
+          ? "Private reflection saved"
+          : "Private reflections saved",
+      icon: BookOpen,
+    },
+    {
+      label: "Common influence",
+      value: emotionalSnapshot.mostCommonInfluence,
+      helper:
+        emotionalSnapshot.mostCommonInfluence === "No tags yet"
+          ? "Tags appear as patterns grow"
+          : "Most repeated tag",
+      icon: ChartNoAxesColumn,
+    },
+    {
+      label: "Last reflection",
+      value: emotionalSnapshot.lastReflectionDate,
+      helper: "Based on saved journal data",
+      icon: Wind,
+    },
+  ]
 
   const handleTabClick = (tabId: string) => {
     if (tabId === "explore") {
@@ -97,6 +250,35 @@ export default function HomePage({
 
     setActiveTab(tabId)
   }
+
+  // (Andy) These cards help users choose where to go next without feeling lost.
+  const nextStepCards = [
+    {
+      title: "Journal",
+      description: "Write a new reflection or review what you already saved.",
+      action: () => setActiveTab("journal"),
+      icon: BookOpen,
+    },
+    {
+      title: "Explore",
+      description:
+        "Open the concept map and connect what is influencing your mood.",
+      action: onOpenExplore,
+      icon: Brain,
+    },
+    {
+      title: "Burn Book",
+      description: "Let a heavy thought out, then release it from the screen.",
+      action: () => setActiveTab("burnbook"),
+      icon: Flame,
+    },
+    {
+      title: "Community",
+      description: "Share a supportive update and see the community space.",
+      action: () => setActiveTab("community"),
+      icon: Network,
+    },
+  ]
 
   // (Andy) only show the journal form after New Entry is clicked
 
@@ -159,26 +341,58 @@ export default function HomePage({
         {/* Main Content */}
         <div className="flex-1 p-4 sm:p-6 lg:p-8">
           <div className="mx-auto max-w-4xl">
-            {/* Motivational Quote */}
-            <div className="mb-6 rounded-2xl border border-violet-200 bg-white/90 p-4 shadow-xl sm:mb-8 sm:rounded-3xl sm:p-6 lg:p-8">
-              <div className="text-center">
-                <div className="mb-3 text-4xl sm:mb-4 sm:text-5xl lg:text-6xl">
-                  💭
+            {/* (Andy) The hero keeps the calm quote but adds context so Home feels less empty. */}
+            <section className="mb-6 overflow-hidden rounded-2xl border border-white/70 bg-white/85 p-5 shadow-xl shadow-violet-200/60 backdrop-blur sm:mb-8 sm:rounded-3xl sm:p-7 lg:p-8">
+              <div className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr] lg:items-center">
+                <div>
+                  <Badge className="mb-4 border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-semibold tracking-[0.18em] text-violet-700 uppercase">
+                    Today&apos;s pause
+                  </Badge>
+                  <blockquote className="text-xl leading-relaxed font-semibold text-[#2f1d69] sm:text-2xl lg:text-3xl">
+                    "{currentQuote}"
+                  </blockquote>
+                  <p className="mt-4 max-w-2xl text-sm leading-6 text-[#6b6485] sm:text-base">
+                    Take a moment to breathe, notice what is here, and choose
+                    one next step that feels manageable.
+                  </p>
                 </div>
-                <blockquote className="mb-3 text-lg leading-relaxed font-semibold text-[#2f1d69] sm:mb-4 sm:text-xl lg:text-2xl">
-                  "{currentQuote}"
-                </blockquote>
-                <p className="text-sm text-[#6b6485] sm:text-base lg:text-lg">
-                  Take a moment to breathe and reflect
-                </p>
+
+                <div className="rounded-3xl border border-violet-100 bg-[#f7f4ff]/80 p-5">
+                  <p className="text-xs font-semibold tracking-[0.18em] text-[#8a80aa] uppercase">
+                    Gentle check-in
+                  </p>
+                  <div className="mt-4 space-y-3">
+                    {[
+                      ["Breathe", "One slow inhale before you move on."],
+                      ["Reflect", "Use your saved entries to spot patterns."],
+                      ["Continue", "Pick the smallest useful next step."],
+                    ].map(([title, description]) => (
+                      <div key={title} className="flex gap-3">
+                        <span className="mt-1 h-2 w-2 rounded-full bg-violet-400" />
+                        <div>
+                          <p className="text-sm font-semibold text-[#2f1d69]">
+                            {title}
+                          </p>
+                          <p className="text-xs leading-5 text-[#6b6485]">
+                            {description}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
+            </section>
 
             {/* Tab Content */}
             <div
-              className={`rounded-2xl border border-violet-200 bg-white/90 shadow-xl sm:rounded-3xl ${
-                isBurnBookTab ? "overflow-hidden" : "p-4 sm:p-6 lg:p-8"
-              }`}
+              className={
+                isHomeTab
+                  ? "space-y-6"
+                  : `rounded-2xl border border-violet-200 bg-white/90 shadow-xl sm:rounded-3xl ${
+                      isBurnBookTab ? "overflow-hidden" : "p-4 sm:p-6 lg:p-8"
+                    }`
+              }
             >
               {showTabTitle && (
                 <h3 className="mb-4 text-lg font-semibold text-[#2f1d69] capitalize sm:text-xl lg:text-2xl">
@@ -187,18 +401,149 @@ export default function HomePage({
               )}
               {activeTab === "home" ? (
                 <div className="space-y-6">
-                  <h2 className="text-2xl font-bold text-[#2f1d69]">
-                    Welcome back
-                  </h2>
-                  <p className="text-[#6b6485]">
-                    Here&apos;s a quick look at how you&apos;ve been feeling lately.
-                  </p>
-                  <div className="rounded-3xl bg-[#f7f4ff] p-6">
-                    <p className="text-sm text-[#6b6485]">Most recent mood</p>
-                    <p className="text-lg font-semibold text-[#2f1d69]">
-                      {entries.length > 0 ? entries[0].feeling : "No entries yet"}
-                    </p>
-                  </div>
+                  {/* (Andy) This stat uses the saved journal entries instead of hardcoded data. */}
+                  <section className="rounded-3xl border border-violet-200 bg-white/90 p-5 shadow-xl shadow-violet-200/50 backdrop-blur sm:p-6 lg:p-8">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                      <div>
+                        <p className="text-xs font-semibold tracking-[0.2em] text-[#8a80aa] uppercase">
+                          Emotional snapshot
+                        </p>
+                        <h2 className="mt-2 text-2xl font-bold text-[#2f1d69] sm:text-3xl">
+                          Welcome back
+                        </h2>
+                      </div>
+                      <p className="max-w-md text-sm leading-6 text-[#6b6485]">
+                        Here&apos;s a quick look at your recent reflections and
+                        the patterns saved in Journal.
+                      </p>
+                    </div>
+
+                    <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                      {snapshotStats.map((stat) => {
+                        const Icon = stat.icon
+
+                        return (
+                          <Card
+                            key={stat.label}
+                            className="rounded-3xl border-violet-100 bg-[#f7f4ff]/80 p-5 shadow-sm transition hover:bg-white hover:shadow-md"
+                          >
+                            <CardContent className="p-0">
+                              <div className="flex items-start justify-between gap-4">
+                                <div>
+                                  <p className="text-sm font-medium text-[#6b6485]">
+                                    {stat.label}
+                                  </p>
+                                  <p className="mt-2 text-2xl font-semibold text-[#2f1d69]">
+                                    {stat.value}
+                                  </p>
+                                </div>
+                                <span className="rounded-2xl bg-white p-3 text-violet-700 shadow-sm">
+                                  <Icon className="h-5 w-5" />
+                                </span>
+                              </div>
+                              <p className="mt-4 text-xs leading-5 text-[#8a80aa]">
+                                {stat.helper}
+                              </p>
+                            </CardContent>
+                          </Card>
+                        )
+                      })}
+                    </div>
+                  </section>
+
+                  {/* (Andy) These navigation cards keep the main dashboard simple and actionable. */}
+                  <section className="rounded-3xl border border-violet-200 bg-white/85 p-5 shadow-xl shadow-violet-200/50 backdrop-blur sm:p-6 lg:p-8">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                      <div>
+                        <p className="text-xs font-semibold tracking-[0.2em] text-[#8a80aa] uppercase">
+                          Choose your next step
+                        </p>
+                        <h2 className="mt-2 text-2xl font-bold text-[#2f1d69]">
+                          What feels useful right now?
+                        </h2>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                      {nextStepCards.map((card) => {
+                        const Icon = card.icon
+
+                        return (
+                          <button
+                            key={card.title}
+                            type="button"
+                            onClick={card.action}
+                            className="group rounded-3xl border border-violet-100 bg-[#f7f4ff]/80 p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200 hover:bg-white hover:shadow-lg"
+                          >
+                            <span className="inline-flex rounded-2xl bg-white p-3 text-violet-700 shadow-sm">
+                              <Icon className="h-5 w-5" />
+                            </span>
+                            <h3 className="mt-4 text-lg font-semibold text-[#2f1d69]">
+                              {card.title}
+                            </h3>
+                            <p className="mt-2 text-sm leading-6 text-[#6b6485]">
+                              {card.description}
+                            </p>
+                            <span className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-violet-700">
+                              Open {card.title}
+                              <ChevronRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </section>
+
+                  {/* (Andy) Support resources are external links, so they open in a new tab. */}
+                  <section className="rounded-3xl border border-violet-200 bg-white/85 p-5 shadow-xl shadow-violet-200/50 backdrop-blur sm:p-6 lg:p-8">
+                    <div className="max-w-2xl">
+                      <p className="text-xs font-semibold tracking-[0.2em] text-[#8a80aa] uppercase">
+                        Support beyond MindGPS
+                      </p>
+                      <h2 className="mt-2 text-2xl font-bold text-[#2f1d69]">
+                        Extra support to keep nearby
+                      </h2>
+                      <p className="mt-3 text-sm leading-6 text-[#6b6485]">
+                        These are external resources, not medical advice.
+                        MindGPS can support reflection, but it does not replace
+                        crisis care or professional support.
+                      </p>
+                    </div>
+
+                    <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                      {supportResources.map((resource) => {
+                        const Icon = resource.icon
+
+                        return (
+                          <a
+                            key={resource.title}
+                            href={resource.href}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="group rounded-3xl border border-violet-100 bg-[#f7f4ff]/80 p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200 hover:bg-white hover:shadow-lg"
+                          >
+                            <div className="flex items-start gap-4">
+                              <span className="rounded-2xl bg-white p-3 text-violet-700 shadow-sm">
+                                <Icon className="h-5 w-5" />
+                              </span>
+                              <div>
+                                <h3 className="text-base font-semibold text-[#2f1d69]">
+                                  {resource.title}
+                                </h3>
+                                <p className="mt-2 text-sm leading-6 text-[#6b6485]">
+                                  {resource.description}
+                                </p>
+                                <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-violet-700">
+                                  Open resource
+                                  <ChevronRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                                </span>
+                              </div>
+                            </div>
+                          </a>
+                        )
+                      })}
+                    </div>
+                  </section>
                 </div>
               ) : activeTab === "journal" ? (
                 <JournalSection
@@ -231,13 +576,13 @@ export default function HomePage({
       {/* Mobile Bottom Tab Navigation - Fixed at bottom on mobile, hidden on lg */}
       <nav className="fixed right-0 bottom-0 left-0 border-t border-violet-200 bg-white/95 shadow-2xl lg:hidden">
         <div className="flex overflow-x-auto">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => handleTabClick(tab.id)}
-                  className={`flex min-w-fit flex-1 flex-col items-center gap-1 border-t-2 px-3 py-3 transition ${
-                    activeTab === tab.id
-                      ? "border-violet-300 bg-violet-50 text-violet-900"
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => handleTabClick(tab.id)}
+              className={`flex min-w-fit flex-1 flex-col items-center gap-1 border-t-2 px-3 py-3 transition ${
+                activeTab === tab.id
+                  ? "border-violet-300 bg-violet-50 text-violet-900"
                   : "border-transparent text-[#6b6485] hover:bg-violet-50 hover:text-violet-700"
               }`}
             >
@@ -260,7 +605,9 @@ function JournalSection({
   const [isWritingEntry, setIsWritingEntry] = useState(false)
   // (Andy) Keep edit/delete loading local to each journal card.
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null)
-  const [deleteConfirmEntryId, setDeleteConfirmEntryId] = useState<string | null>(null)
+  const [deleteConfirmEntryId, setDeleteConfirmEntryId] = useState<
+    string | null
+  >(null)
   const [savingEntryId, setSavingEntryId] = useState<string | null>(null)
   const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null)
   const [editDraft, setEditDraft] = useState<EditDraft>({
@@ -371,8 +718,9 @@ function JournalSection({
             <h3 className="text-2xl font-bold text-[#2f1d69] sm:text-3xl">
               Journal
             </h3>
-            <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-violet-700">
-              {entries.length} {entries.length === 1 ? "entry" : "entries"} saved
+            <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold tracking-wide text-violet-700 uppercase">
+              {entries.length} {entries.length === 1 ? "entry" : "entries"}{" "}
+              saved
             </span>
           </div>
           <p className="mt-2 text-sm leading-relaxed text-[#6b6485] sm:text-base">
@@ -395,17 +743,19 @@ function JournalSection({
 
       {entries.length > 0 ? (
         <div className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8a80aa]">
+          <p className="text-xs font-semibold tracking-[0.2em] text-[#8a80aa] uppercase">
             Recent Reflections
           </p>
 
           {entries.map((entry, index) => {
             const entryId = entry.journalId
-            const isEditing = entryId !== undefined && editingEntryId === entryId
+            const isEditing =
+              entryId !== undefined && editingEntryId === entryId
             const isConfirmingDelete =
               entryId !== undefined && deleteConfirmEntryId === entryId
             const isSaving = entryId !== undefined && savingEntryId === entryId
-            const isDeleting = entryId !== undefined && deletingEntryId === entryId
+            const isDeleting =
+              entryId !== undefined && deletingEntryId === entryId
             const influenceChoices = Array.from(
               new Set([...journalInfluenceOptions, ...editDraft.influences])
             )
@@ -464,7 +814,7 @@ function JournalSection({
                   >
                     <div className="grid gap-4 sm:grid-cols-[1.2fr_0.8fr]">
                       <label className="block">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-[#6b6485]">
+                        <span className="text-xs font-semibold tracking-wide text-[#6b6485] uppercase">
                           Title
                         </span>
                         <input
@@ -475,11 +825,11 @@ function JournalSection({
                               title: event.target.value,
                             }))
                           }
-                          className="mt-2 w-full rounded-2xl border border-violet-200 bg-purple-50/60 px-4 py-3 text-sm text-[#2f1d69] outline-none transition focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100"
+                          className="mt-2 w-full rounded-2xl border border-violet-200 bg-purple-50/60 px-4 py-3 text-sm text-[#2f1d69] transition outline-none focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100"
                         />
                       </label>
                       <label className="block">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-[#6b6485]">
+                        <span className="text-xs font-semibold tracking-wide text-[#6b6485] uppercase">
                           Feeling
                         </span>
                         <input
@@ -490,13 +840,13 @@ function JournalSection({
                               feeling: event.target.value,
                             }))
                           }
-                          className="mt-2 w-full rounded-2xl border border-violet-200 bg-purple-50/60 px-4 py-3 text-sm text-[#2f1d69] outline-none transition focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100"
+                          className="mt-2 w-full rounded-2xl border border-violet-200 bg-purple-50/60 px-4 py-3 text-sm text-[#2f1d69] transition outline-none focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100"
                         />
                       </label>
                     </div>
 
                     <label className="block">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-[#6b6485]">
+                      <span className="text-xs font-semibold tracking-wide text-[#6b6485] uppercase">
                         Reflection
                       </span>
                       <textarea
@@ -508,17 +858,18 @@ function JournalSection({
                           }))
                         }
                         rows={5}
-                        className="mt-2 w-full rounded-2xl border border-violet-200 bg-purple-50/60 p-3 text-sm text-[#2f1d69] outline-none transition focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100"
+                        className="mt-2 w-full rounded-2xl border border-violet-200 bg-purple-50/60 p-3 text-sm text-[#2f1d69] transition outline-none focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100"
                       />
                     </label>
 
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-[#6b6485]">
+                      <p className="text-xs font-semibold tracking-wide text-[#6b6485] uppercase">
                         Influences
                       </p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {influenceChoices.map((influence) => {
-                          const checked = editDraft.influences.includes(influence)
+                          const checked =
+                            editDraft.influences.includes(influence)
 
                           return (
                             <button
@@ -567,7 +918,7 @@ function JournalSection({
                     )}
 
                     <div className="mt-5 flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-[#6b6485]">
+                      <span className="text-xs font-semibold tracking-wide text-[#6b6485] uppercase">
                         Influences:
                       </span>
 
@@ -628,7 +979,8 @@ function JournalSection({
             No journal entries yet
           </h4>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[#6b6485] sm:text-base">
-            Complete your daily check-in to start building your private reflection history.
+            Complete your daily check-in to start building your private
+            reflection history.
           </p>
         </div>
       )}

@@ -42,9 +42,9 @@ const mapSchema = new mongoose.Schema({
 });
 
 /* auto update timestamp */
-mapSchema.pre("save", function (next) {
+mapSchema.pre("save", function () {
+  // (Andy) Keep the map updatedAt field fresh before saving changes.
   this.updatedAt = new Date();
-  next();
 });
 
 export const Map = mongoose.model("Map", mapSchema);
