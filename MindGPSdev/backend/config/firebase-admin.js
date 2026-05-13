@@ -12,6 +12,9 @@ const serviceAccount = {
   token_uri: "https://oauth2.googleapis.com/token",
 };
 
+console.log('DEBUG - Firebase project_id:', serviceAccount.project_id);
+console.log('DEBUG - Firebase client_email:', serviceAccount.client_email);
+
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
@@ -19,5 +22,3 @@ if (!admin.apps.length) {
 }
 
 export default admin;
-
-/* DIFFERENT FIREBASE PROTECTION USING aya.baileya@gmail.com used in .env*/
