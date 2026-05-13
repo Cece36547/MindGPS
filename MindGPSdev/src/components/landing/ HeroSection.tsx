@@ -30,7 +30,7 @@ export default function HeroSection({
               <br />
               thoughts, <span className="text-[#7d69d6]">emotions,</span>
               <br />
-              and reflection.
+              and reflect.
             </h1>
 
             <p className="max-w-2xl text-lg leading-9 text-[#5d5479]">
