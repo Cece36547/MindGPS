@@ -10,7 +10,11 @@ import communityRoutes from "./routes/community.routes.js";
 
 const app = express();
 // (Andy) Keep CORS explicit so local Vite can call the API with Firebase auth.
-const allowedOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173'];
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  process.env.FRONTEND_URL || 'http://localhost:3000'
+]
 
 app.get("/", (req, res) => {
   res.send("MindGPS API is running 🚀");
