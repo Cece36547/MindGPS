@@ -10,6 +10,7 @@ import {
 } from "@/lib/communityApi"
 import type { CommunityFeeling, CommunityPost } from "@/types/community"
 import type { MoodEntry } from "@/types/mood"
+import { Heart } from "@/lib/lucide-icons"
 
 // (andy) This list mirrors the backend enum for community post feelings.
 const feelings: CommunityFeeling[] = [
@@ -339,9 +340,10 @@ export function CommunityPage({ entries }: { entries: MoodEntry[] }) {
                   type="button"
                   onClick={() => handleSupport(post._id)}
                   disabled={pendingPostId === post._id}
-                  className="rounded-full border border-violet-200 bg-violet-50 px-3 py-2 text-violet-900 transition hover:bg-violet-100"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 px-3 py-2 text-violet-900 transition hover:bg-violet-100"
                 >
-                  {post.supportedByCurrentUser ? "❤️ Supported" : "❤️ Support"} ({post.supportCount})
+                  <Heart className="h-4 w-4" />
+                  {post.supportedByCurrentUser ? "Supported" : "Support"} ({post.supportCount})
                 </button>
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   <span>{post.supportedByCurrentUser ? "You shared some support" : "Send some support"}</span>

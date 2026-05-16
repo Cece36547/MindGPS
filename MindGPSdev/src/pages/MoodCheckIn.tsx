@@ -1,14 +1,22 @@
 import { useMemo, useState } from "react";
 import { MindButton } from "@/components/mind/MindButton";
 import type { MoodEntry } from "@/types/mood";
+import {
+  Activity,
+  BadgeCheck,
+  Cloud,
+  Frown,
+  Leaf,
+  Zap,
+} from "@/lib/lucide-icons";
 
 const feelings = [
-  { value: "calm", label: "Calm", emoji: "🧘" },
-  { value: "anxious", label: "Anxious", emoji: "😟" },
-  { value: "grateful", label: "Grateful", emoji: "🙏" },
-  { value: "restless", label: "Restless", emoji: "😬" },
-  { value: "sad", label: "Sad", emoji: "😢" },
-  { value: "energetic", label: "Energetic", emoji: "⚡" },
+  { value: "calm", label: "Calm", icon: Leaf },
+  { value: "anxious", label: "Anxious", icon: Cloud },
+  { value: "grateful", label: "Grateful", icon: BadgeCheck },
+  { value: "restless", label: "Restless", icon: Activity },
+  { value: "sad", label: "Sad", icon: Frown },
+  { value: "energetic", label: "Energetic", icon: Zap },
 ];
 const influences = [
   "homesickness",
@@ -102,6 +110,8 @@ export default function MoodCheckIn({
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           {feelings.map((feeling) => {
             const active = selectedFeeling === feeling.value;
+            const Icon = feeling.icon;
+
             return (
               <button
                 key={feeling.value}
@@ -114,7 +124,7 @@ export default function MoodCheckIn({
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">{feeling.emoji}</span>
+                  <Icon className="h-5 w-5" />
                   <span className="text-base font-semibold">{feeling.label}</span>
                 </div>
               </button>

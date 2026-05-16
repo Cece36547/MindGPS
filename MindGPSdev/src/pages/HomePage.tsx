@@ -13,10 +13,14 @@ import {
   ChartNoAxesColumn,
   ChevronRight,
   Flame,
+  Home,
   Network,
+  NotebookPen,
   Pencil,
   Save,
+  Search,
   Trash2,
+  UsersRound,
   Wind,
   X,
 } from "@/lib/lucide-icons"
@@ -36,11 +40,11 @@ const motivationalQuotes = [
 // (Andy) keep the dashboard tabs focused on the MVP sections we want people using right now
 const tabs = [
   // (Andy) added home first so it shows before journal
-  { id: "home", label: "Home", icon: "🏠" },
-  { id: "explore", label: "Explore", icon: "🔍" },
-  { id: "journal", label: "Journal", icon: "📝" },
-  { id: "community", label: "Community", icon: "👥" },
-  { id: "burnbook", label: "Burn Book", icon: "🔥" },
+  { id: "home", label: "Home", icon: Home },
+  { id: "explore", label: "Explore", icon: Search },
+  { id: "journal", label: "Journal", icon: NotebookPen },
+  { id: "community", label: "Community", icon: UsersRound },
+  { id: "burnbook", label: "Burn Book", icon: Flame },
 ]
 const journalInfluenceOptions = [
   "homesickness",
@@ -113,6 +117,31 @@ const formatEntryDate = (value?: string) => { // Format a date for display
     day: "numeric",
     year: "numeric",
   }).format(date)
+}
+
+const formatJournalDate = (dateString?: string) => {
+  if (!dateString) {
+    return ""
+  }
+
+  const date = new Date(dateString)
+
+  if (Number.isNaN(date.getTime())) {
+    return dateString
+  }
+
+  // (Andy) Formats MongoDB timestamps for a cleaner journal UI.
+  const datePart = new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(date)
+  const timePart = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date)
+
+  return `${datePart} at ${timePart}`
 }
 // MindGPS does not intend to provide medical advice or replace professional help. it is tool for personal reflection and support.
 const supportResources = [ // Support resources for mental health and crisis situations (Andy)
@@ -305,22 +334,26 @@ export default function HomePage({
             </h2>
 
             <nav className="space-y-2">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => handleTabClick(tab.id)}
-                  className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition ${
-                    activeTab === tab.id
-                      ? "border border-violet-300 bg-violet-100 text-violet-900"
-                      : "text-[#6b6485] hover:bg-violet-50 hover:text-violet-700"
-                  }`}
-                >
-                  <span className="text-lg">{tab.icon}</span>
-                  <span className="hidden font-medium sm:inline">
-                    {tab.label}
-                  </span>
-                </button>
-              ))}
+              {tabs.map((tab) => {
+                const Icon = tab.icon
+
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => handleTabClick(tab.id)}
+                    className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition ${
+                      activeTab === tab.id
+                        ? "border border-violet-300 bg-violet-100 text-violet-900"
+                        : "text-[#6b6485] hover:bg-violet-50 hover:text-violet-700"
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span className="hidden font-medium sm:inline">
+                      {tab.label}
+                    </span>
+                  </button>
+                )
+              })}
             </nav>
 
             <div className="space-y-3 border-t border-violet-200 pt-6">
@@ -558,9 +591,15 @@ export default function HomePage({
                 <BurnBook />
               ) : (
                 <div className="py-8 text-center sm:py-12">
-                  <div className="mb-3 text-3xl sm:mb-4 sm:text-4xl">
-                    {tabs.find((tab) => tab.id === activeTab)?.icon}
-                  </div>
+                  {(() => {
+                    const ActiveIcon = tabs.find(
+                      (tab) => tab.id === activeTab
+                    )?.icon
+
+                    return ActiveIcon ? (
+                      <ActiveIcon className="mx-auto mb-3 h-8 w-8 text-violet-500 sm:mb-4" />
+                    ) : null
+                  })()}
                   <p className="text-sm text-[#6b6485] sm:text-base lg:text-lg">
                     {activeTab === "explore" && "emotional concept map "}
                     {activeTab === "community" &&
@@ -576,20 +615,24 @@ export default function HomePage({
       {/* Mobile Bottom Tab Navigation - Fixed at bottom on mobile, hidden on lg */}
       <nav className="fixed right-0 bottom-0 left-0 border-t border-violet-200 bg-white/95 shadow-2xl lg:hidden">
         <div className="flex overflow-x-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => handleTabClick(tab.id)}
-              className={`flex min-w-fit flex-1 flex-col items-center gap-1 border-t-2 px-3 py-3 transition ${
-                activeTab === tab.id
-                  ? "border-violet-300 bg-violet-50 text-violet-900"
-                  : "border-transparent text-[#6b6485] hover:bg-violet-50 hover:text-violet-700"
-              }`}
-            >
-              <span className="text-xl">{tab.icon}</span>
-              <span className="text-xs font-medium">{tab.label}</span>
-            </button>
-          ))}
+          {tabs.map((tab) => {
+            const Icon = tab.icon
+
+            return (
+              <button
+                key={tab.id}
+                onClick={() => handleTabClick(tab.id)}
+                className={`flex min-w-fit flex-1 flex-col items-center gap-1 border-t-2 px-3 py-3 transition ${
+                  activeTab === tab.id
+                    ? "border-violet-300 bg-violet-50 text-violet-900"
+                    : "border-transparent text-[#6b6485] hover:bg-violet-50 hover:text-violet-700"
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+                <span className="text-xs font-medium">{tab.label}</span>
+              </button>
+            )
+          })}
         </div>
       </nav>
     </main>
@@ -768,11 +811,11 @@ function JournalSection({
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="text-xs font-medium text-[#5d5479] sm:text-sm">
-                      {entry.createdAt}
+                      {formatJournalDate(entry.createdAt)}
                     </p>
                     {entry.updatedAt && entry.updatedAt !== entry.createdAt && (
                       <p className="mt-1 text-xs text-[#8a80aa]">
-                        Edited {entry.updatedAt}
+                        Edited {formatJournalDate(entry.updatedAt)}
                       </p>
                     )}
                   </div>
@@ -974,12 +1017,12 @@ function JournalSection({
         </div>
       ) : (
         <div className="rounded-3xl bg-[#f7f4ff] px-6 py-12 text-center">
-          <div className="mb-4 text-4xl">📝</div>
+          <NotebookPen className="mx-auto mb-4 h-10 w-10 text-violet-500" />
           <h4 className="text-lg font-semibold text-[#2f1d69]">
             No journal entries yet
           </h4>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[#6b6485] sm:text-base">
-            Complete your daily check-in to start building your private
+            Complete your daily check in to start building your private
             reflection history.
           </p>
         </div>
