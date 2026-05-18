@@ -12,7 +12,7 @@ const app = express();
 // (Andy) Keep CORS explicit so local Vite can call the API with Firebase auth.
 const allowedOrigins = [
   'http://localhost:5173',
-  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5173', 'https://fascinating-choux-30d653.netlify.app/',
   process.env.FRONTEND_URL || 'http://localhost:3000'
 ]
 
